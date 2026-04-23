@@ -205,3 +205,7 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+/emotion_module/fer/fer2013
+/emotion_module/yolo/YOLO_format
+/emotion_module/yolo/runs
