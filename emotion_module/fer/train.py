@@ -146,7 +146,7 @@ def run_training(model, optimizer, scheduler, epochs, phase_name):
     return history
 
 
-# ── Plot ──────────────────────────────────────────────────────────────────
+# Plot
 def plot_history(h1, h2):
     train_loss = h1["train_loss"] + h2["train_loss"]
     val_loss = h1["val_loss"] + h2["val_loss"]
@@ -238,6 +238,8 @@ def evaluate_test(model):
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
                 xticklabels=EMOTIONS, yticklabels=EMOTIONS)
     plt.title("Confusion Matrix")
+    plt.ylabel("True Label")
+    plt.xlabel("Predicted Label")
     plt.tight_layout()
     plt.savefig("confusion_matrix.png")
     print("Saved: confusion_matrix.png")
