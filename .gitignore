@@ -209,6 +209,7 @@ __marimo__/
 /emotion_module/fer/fer2013
 /emotion_module/yolo/YOLO_format
 /emotion_module/yolo/runs
+/emotion_module/affectnet/AffectNet
 
 # Local raw data path for training.py
 RAW_DATA_PATH=C:/Users/bbtnz/OneDrive/Documents/LCC_FASD
