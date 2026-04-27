@@ -40,8 +40,8 @@ axes[1].set_title("Test Distribution")
 axes[1].tick_params(axis='x', rotation=45)
 
 plt.tight_layout()
-plt.savefig("distribution.png")
-print("Saved: distribution.png")
+plt.savefig("explore/distribution.png")
+print("Saved: explore/distribution.png")
 
 # Preview samples
 from torchvision import transforms
@@ -64,5 +64,5 @@ for i in range(10):
     plt.title(emotions[labels[i]])
     plt.axis("off")
 plt.tight_layout()
-plt.savefig("samples.png")
-print("Saved: samples.png")
+plt.savefig("explore/samples.png")
+print("Saved: explore/samples.png")
