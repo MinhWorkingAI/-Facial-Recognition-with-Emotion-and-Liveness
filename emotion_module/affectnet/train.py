@@ -5,7 +5,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
-from torch.optim import Adam
+from torch.optim import Adam, AdamW
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader, random_split
@@ -248,13 +248,15 @@ if __name__ == "__main__":
 
     # Phase 1 — frozen backbone
     model = build_model(num_classes=len(EMOTIONS), freeze_backbone=True).to(DEVICE)
-    optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=LR_FROZEN)
+    # optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=LR_TUNED)
+    optimizer = AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=LR_TUNED, weight_decay=1e-4)
     scheduler = ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.5)
     h1 = run_training(model, optimizer, scheduler, EPOCHS_FROZEN, "Phase 1 — Frozen Backbone")
 
     # Phase 2 — fine-tune
     model = unfreeze_backbone(model, unfreeze_from_layer=14)
-    optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=LR_TUNED)
+    # optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=LR_TUNED)
+    optimizer = AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=LR_TUNED, weight_decay=1e-4)
     scheduler = ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.5)
     h2 = run_training(model, optimizer, scheduler, EPOCHS_TUNED, "Phase 2 — Fine-tuning")
 
