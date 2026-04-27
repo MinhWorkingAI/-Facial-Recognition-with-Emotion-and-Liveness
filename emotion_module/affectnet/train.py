@@ -8,7 +8,7 @@ import seaborn as sns
 from torch.optim import Adam, AdamW
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torchvision import datasets, transforms
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader, Subset, random_split
 from sklearn.metrics import (
     accuracy_score,
     classification_report,
@@ -55,13 +55,23 @@ test_transform = transforms.Compose([
 ])
 
 # Data
-full_train = datasets.ImageFolder(TRAIN_DIR, transform=train_transform)
+full_train_base = datasets.ImageFolder(TRAIN_DIR)
+full_train_aug = datasets.ImageFolder(TRAIN_DIR, transform=train_transform)
+full_train_eval = datasets.ImageFolder(TRAIN_DIR, transform=test_transform)
 test_dataset = datasets.ImageFolder(TEST_DIR,  transform=test_transform)
-EMOTIONS = full_train.classes
+EMOTIONS = full_train_base.classes
 
-train_dataset, val_dataset = random_split(
-    full_train, [0.8, 0.2], generator=torch.Generator().manual_seed(42)
+num_samples = len(full_train_base)
+train_size = int(0.8 * num_samples)
+val_size = num_samples - train_size
+train_idx_subset, val_idx_subset = random_split(
+    range(num_samples), [train_size, val_size], generator=torch.Generator().manual_seed(42)
 )
+train_indices = list(train_idx_subset.indices)
+val_indices = list(val_idx_subset.indices)
+
+train_dataset = Subset(full_train_aug, train_indices)
+val_dataset = Subset(full_train_eval, val_indices)
 
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
 val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
@@ -71,7 +81,7 @@ print(f"Train: {len(train_dataset)} | Val: {len(val_dataset)} | Test: {len(test_
 
 # Class weights / punish more on major classes
 counts = [0] * len(EMOTIONS)
-for _, label in full_train.samples:
+for _, label in full_train_base.samples:
     counts[label] += 1
 total = sum(counts)
 weights = torch.tensor(
@@ -249,7 +259,7 @@ if __name__ == "__main__":
     # Phase 1 — frozen backbone
     model = build_model(num_classes=len(EMOTIONS), freeze_backbone=True).to(DEVICE)
     # optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=LR_TUNED)
-    optimizer = AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=LR_TUNED, weight_decay=1e-4)
+    optimizer = AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=LR_FROZEN, weight_decay=1e-4)
     scheduler = ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.5)
     h1 = run_training(model, optimizer, scheduler, EPOCHS_FROZEN, "Phase 1 — Frozen Backbone")
 
