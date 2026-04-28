@@ -9,7 +9,7 @@ from model import build_model, get_mobilenet_norm_stats
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 MODEL_PATH = "best_model.pth"
 TRAIN_DIR = "AffectNet/Train"
-IMG_SIZE = 96
+IMG_SIZE = 224
 NORM_MEAN, NORM_STD = get_mobilenet_norm_stats()
 EMOTIONS = datasets.ImageFolder(TRAIN_DIR).classes
 

@@ -22,7 +22,7 @@ from model import build_model, get_mobilenet_norm_stats, unfreeze_backbone
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 TRAIN_DIR = "AffectNet/Train"
 TEST_DIR = "AffectNet/Test"
-IMG_SIZE = 128
+IMG_SIZE = 224
 BATCH_SIZE = 32
 EPOCHS_FROZEN = 15
 EPOCHS_TUNED = 15
