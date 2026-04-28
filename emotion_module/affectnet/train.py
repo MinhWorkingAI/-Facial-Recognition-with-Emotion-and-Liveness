@@ -22,15 +22,15 @@ from model import build_model, get_mobilenet_norm_stats, unfreeze_backbone
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 TRAIN_DIR = "AffectNet/Train"
 TEST_DIR = "AffectNet/Test"
-IMG_SIZE = 96
+IMG_SIZE = 128
 BATCH_SIZE = 32
 EPOCHS_FROZEN = 15
 EPOCHS_TUNED = 15
 LR_FROZEN = 1e-3
 LR_TUNED = 1e-4
 SAVE_PATH = "best_model.pth"
-METRICS_PATH = "test_metrics.txt"
-HISTORY_CSV_PATH = "training_history.csv"
+METRICS_PATH = "metrics/test_metrics.txt"
+HISTORY_CSV_PATH = "metrics/training_history.csv"
 
 print(f"Using device: {DEVICE}")
 
@@ -177,8 +177,8 @@ def plot_history(h1, h2):
     axes[1].legend()
 
     plt.tight_layout()
-    plt.savefig("training_curves.png")
-    print("Saved: training_curves.png")
+    plt.savefig("metrics/training_curves.png")
+    print("Saved: metrics/training_curves.png")
 
     with open(HISTORY_CSV_PATH, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
@@ -249,8 +249,8 @@ def evaluate_test(model):
     plt.ylabel("True Label")
     plt.xlabel("Predicted Label")
     plt.tight_layout()
-    plt.savefig("confusion_matrix.png")
-    print("Saved: confusion_matrix.png")
+    plt.savefig("metrics/confusion_matrix.png")
+    print("Saved: metrics/confusion_matrix.png")
 
 
 # Main

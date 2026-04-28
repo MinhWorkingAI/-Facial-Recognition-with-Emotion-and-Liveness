@@ -1,0 +1,24 @@
+=== Test Metrics Summary ===
+Accuracy           : 0.6074
+Macro Precision    : 0.5701
+Macro Recall       : 0.5694
+Macro F1           : 0.5660
+Weighted Precision : 0.5981
+Weighted Recall    : 0.6074
+Weighted F1        : 0.5986
+
+=== Per-class Report ===
+              precision    recall  f1-score   support
+
+       anger       0.51      0.46      0.49      1718
+    contempt       0.56      0.56      0.56      1312
+     disgust       0.45      0.38      0.41      1248
+        fear       0.54      0.42      0.48      1664
+       happy       0.86      0.86      0.86      2704
+     neutral       0.68      0.90      0.78      2368
+         sad       0.52      0.60      0.55      1584
+    surprise       0.43      0.38      0.40      1920
+
+    accuracy                           0.61     14518
+   macro avg       0.57      0.57      0.57     14518
+weighted avg       0.60      0.61      0.60     14518
