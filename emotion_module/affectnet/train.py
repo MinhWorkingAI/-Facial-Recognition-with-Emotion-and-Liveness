@@ -264,7 +264,7 @@ if __name__ == "__main__":
     h1 = run_training(model, optimizer, scheduler, EPOCHS_FROZEN, "Phase 1 — Frozen Backbone")
 
     # Phase 2 — fine-tune
-    model = unfreeze_backbone(model, unfreeze_from_layer=14)
+    model = unfreeze_backbone(model, unfreeze_from_layer=10)
     # optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=LR_TUNED)
     optimizer = AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=LR_TUNED, weight_decay=1e-4)
     scheduler = ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.5)
