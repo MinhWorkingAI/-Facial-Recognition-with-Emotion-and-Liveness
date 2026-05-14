@@ -211,5 +211,8 @@ __marimo__/
 /emotion_module/yolo/runs
 /emotion_module/affectnet/AffectNet
 
+# Face_Detection_Module
+/Face_detection_module/model
+
 # Local raw data path for training.py
 RAW_DATA_PATH=C:/Users/bbtnz/OneDrive/Documents/LCC_FASD

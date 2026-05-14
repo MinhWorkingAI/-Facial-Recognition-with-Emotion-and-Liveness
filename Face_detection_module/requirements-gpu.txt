@@ -1,0 +1,28 @@
+# ============================================================
+# requirements-gpu.txt
+# Face Detection Module — GPU (CUDA) dependencies
+# COS40007 Group CL04-G01
+# ============================================================
+# Prerequisites (install BEFORE pip packages):
+#   - NVIDIA driver >= 525
+#   - CUDA Toolkit 11.8 or 12.x  (https://developer.nvidia.com/cuda-downloads)
+#   - cuDNN 8.x / 9.x matching your CUDA version
+#
+# Install with:
+#   pip install -r requirements-gpu.txt
+
+# --- ONNX Runtime (GPU / CUDA build) -------------------------
+# This provides CUDAExecutionProvider.
+# Do NOT install onnxruntime (CPU) alongside this — they conflict.
+onnxruntime-gpu>=1.17.0,<2.0.0
+
+# --- InsightFace ---------------------------------------------
+insightface>=0.7.3
+
+# --- Core numerical / image stack ----------------------------
+numpy>=1.24.0,<2.0.0
+opencv-python>=4.8.0
+Pillow>=10.0.0
+
+# --- Optional: progress / utilities --------------------------
+tqdm>=4.66.0

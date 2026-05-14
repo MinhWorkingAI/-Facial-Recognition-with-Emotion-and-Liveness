@@ -1,0 +1,23 @@
+# ============================================================
+# requirements-cpu.txt
+# Face Detection Module — CPU-only dependencies
+# COS40007 Group CL04-G01
+# ============================================================
+# Install with:
+#   pip install -r requirements-cpu.txt
+
+# --- ONNX Runtime (CPU build) --------------------------------
+# Do NOT install onnxruntime-gpu alongside this — they conflict.
+onnxruntime>=1.17.0,<2.0.0
+
+# --- InsightFace ---------------------------------------------
+# Provides the SCRFD model wrapper and pre/post-processing logic.
+insightface>=0.7.3
+
+# --- Core numerical / image stack ----------------------------
+numpy>=1.24.0,<2.0.0
+opencv-python>=4.8.0          # camera capture + drawing (face_detection_demo.py)
+Pillow>=10.0.0                # required internally by insightface
+
+# --- Optional: progress / utilities --------------------------
+tqdm>=4.66.0                  # nicer download progress (used by insightface internally)
