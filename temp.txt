@@ -1,0 +1,117 @@
+facial-attendance-system/
+│
+├── backend/
+│   ├── app/
+│   │   ├── main.py
+│   │   ├── config.py
+│   │   ├── database.py
+│   │   │
+│   │   ├── api/
+│   │   │   ├── routes_employees.py
+│   │   │   ├── routes_attendance.py
+│   │   │   ├── routes_recognition.py
+│   │   │   └── routes_models.py
+│   │   │
+│   │   ├── services/
+│   │   │   ├── face_detection_service.py
+│   │   │   ├── verification_service.py
+│   │   │   ├── liveness_service.py
+│   │   │   ├── emotion_service.py (inherit base_service)
+│   │   │   └── base_service.py
+│   │   │   └── inference_service.py
+│   │   │
+│   │   ├── schemas/
+│   │   │   ├── employee_schema.py
+│   │   │   ├── attendance_schema.py
+│   │   │   └── recognition_schema.py
+│   │   │
+│   │   └── utils/
+│   │       ├── image_utils.py
+│   │       ├── camera_utils.py
+│   │       ├── similarity.py
+│   │       └── security.py
+│   │
+│   ├── requirements.txt
+│   └── Dockerfile
+│
+├── frontend/
+│   ├── src/
+│   │   ├── main.jsx
+│   │   ├── App.jsx
+│   │   │
+│   │   ├── pages/
+│   │   │   ├── Dashboard.jsx
+│   │   │   ├── LiveAttendance.jsx
+│   │   │   ├── RegisterEmployee.jsx
+│   │   │   ├── Employees.jsx
+│   │   │   └── AttendanceHistory.jsx
+│   │   │
+│   │   ├── components/
+│   │   │   ├── WebcamCapture.jsx
+│   │   │   ├── RecognitionResult.jsx
+│   │   │   ├── EmotionBadge.jsx
+│   │   │   ├── LivenessStatus.jsx
+│   │   │   └── Navbar.jsx
+│   │   │
+│   │   ├── services/
+│   │   │   └── api.js
+│   │   │
+│   │   └── styles/
+│   │       └── global.css
+│   │
+│   ├── package.json
+│   └── Dockerfile
+│
+├── ml/
+│   ├── data/
+│   │   ├── raw/
+│   │   │   ├── classification_data/
+│   │   │   ├── verification_data/
+│   │   │   └── verification_pairs_val.txt
+│   │   │
+│   │   ├── processed/
+│   │   └── external/
+│   │
+│   ├── training/
+│   │   ├── train_face_classification.py
+│   │   ├── train_face_metric_learning.py
+│   │   ├── train_liveness.py
+│   │   └── train_emotion.py
+│   │
+│   ├── evaluation/
+│   │   ├── evaluate_face_verification.py
+│   │   ├── evaluate_liveness.py
+│   │   ├── evaluate_emotion.py
+│   │   └── plot_roc_auc.py
+│   │
+│   ├── datasets/
+│   │   ├── face_dataset.py
+│   │   ├── triplet_dataset.py
+│   │   ├── liveness_dataset.py
+│   │   └── emotion_dataset.py
+│   │
+│   ├── networks/
+│   │   ├── face_cnn.py
+│   │   ├── siamese_network.py
+│   │   ├── liveness_cnn.py
+│   │   └── emotion_cnn.py
+│   │
+│   └── notebooks/
+│       ├── face_recognition_experiments.ipynb
+│       ├── emotion_experiments.ipynb
+│       └── liveness_experiments.ipynb
+│
+├── reports/
+│   ├── group_report/
+│   ├── individual_report/
+│   └── figures/
+│
+├── docs/
+│   ├── system_architecture.md
+│   ├── api_documentation.md
+│   └── setup_guide.md
+│
+├── docker-compose.yml
+├── README.md
+├── .gitignore
+└── .env
