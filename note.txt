@@ -1,0 +1,4 @@
+route_emotion
+
+input: frame, bboxes 
+output: model_result

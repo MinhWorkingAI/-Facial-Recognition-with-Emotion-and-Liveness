@@ -47,6 +47,7 @@ from typing import Tuple
 
 import cv2
 import numpy as np
+import tensorflow as tf
 
 # ---------------------------------------------------------------------------
 # Import the core detector from this package
@@ -99,6 +100,23 @@ _FPS_THICKNESS: int = 2
 
 # FPS smoothing window (number of frames)
 _FPS_SMOOTH: int = 30
+
+# Anti-spoofing image size (must match MobileNetV2 training input)
+IMG_SIZE: Tuple[int, int] = (224, 224)
+
+# Default anti-spoofing model path (best checkpoint from training)
+# Points to SavedModel directory — resave from notebook with:
+#   model.save("model/best_fasd_mobilenetv2_savedmodel")
+_DEFAULT_SPOOF_MODEL_PATH: Path = (
+    Path(__file__).parent.parent
+    / "anti_spoofing_module_MobileNetV2"
+    / "model"
+    / "best_fasd_mobilenetv2_savedmodel"
+)
+
+# Class names as stored by image_dataset_from_directory (alphabetical)
+# LCC_FASD dataset folders: real/, spoof/
+_SPOOF_CLASS_NAMES: list[str] = ["real", "spoof"]
 
 
 # ---------------------------------------------------------------------------
@@ -172,6 +190,64 @@ def draw_fps(frame_bgr: np.ndarray, fps: float) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Anti-spoofing helper
+# ---------------------------------------------------------------------------
+
+def predict_real_or_spoof(
+    face_rgb: np.ndarray,
+    spoof_model: "tf.keras.Model",
+    class_names: list[str],
+) -> tuple[str, float]:
+    """
+    Run the anti-spoofing model on a single cropped face.
+
+    Preprocessing mirrors the notebook pipeline:
+      - resize to IMG_SIZE (224×224)
+      - cast to float32  (raw 0-255 pixel values)
+      - preprocess_input (mobilenet_v2 scaling to [-1, 1]) is **baked into
+        the saved model**, so no manual scaling is needed here.
+
+    Parameters
+    ----------
+    face_rgb : np.ndarray
+        Cropped face region in RGB order, uint8, shape (H, W, 3).
+    spoof_model : tf.keras.Model
+        Loaded anti-spoofing Keras model.
+    class_names : list[str]
+        Ordered class labels matching the model's output indices
+        (e.g. ["real", "spoof"]).
+
+    Returns
+    -------
+    label : str
+        Predicted class name.
+    confidence : float
+        Confidence score in [0, 1].
+    """
+    # -- Preprocess: resize and add batch dim
+    img = cv2.resize(face_rgb, IMG_SIZE)          # (224, 224, 3)
+    x = img.astype(np.float32)                    # keep raw 0-255; model scales internally
+    x = np.expand_dims(x, axis=0)                 # (1, 224, 224, 3)
+
+    # -- Predict
+    pred = spoof_model.predict(x, verbose=0)
+
+    # -- Postprocess: works for both binary sigmoid and multi-class softmax
+    if pred.shape[-1] == 1:
+        # binary output
+        score = float(pred[0][0])
+        pred_idx = 1 if score >= 0.5 else 0
+        confidence = score if pred_idx == 1 else (1 - score)
+    else:
+        # multi-class softmax output
+        pred_idx = int(np.argmax(pred[0]))
+        confidence = float(np.max(pred[0]))
+
+    label = class_names[pred_idx]
+    return label, confidence
+
+
+# ---------------------------------------------------------------------------
 # Main demo loop
 # ---------------------------------------------------------------------------
 
@@ -181,6 +257,7 @@ def run_demo(
     conf_threshold: float = DEFAULT_CONF_THRESHOLD,
     nms_threshold: float = DEFAULT_NMS_THRESHOLD,
     model_dir: str | Path | None = None,
+    spoof_model_path: str | Path | None = None,
 ) -> None:
     """
     Open a camera or video file and display live face detection results.
@@ -197,6 +274,9 @@ def run_demo(
         IoU threshold for NMS.
     model_dir : str | Path | None
         Override the default model directory (useful for testing).
+    spoof_model_path : str | Path | None
+        Path to the anti-spoofing Keras model.  Defaults to
+        ``anti_spoofing_module_MobileNetV2/model/best_fasd_mobilenetv2_model.keras``.
     """
     # ---- Initialise detector ------------------------------------------------
     detector_kwargs: dict = {
@@ -210,6 +290,17 @@ def run_demo(
     print("[demo] Initialising FaceDetector …")
     detector = FaceDetector(**detector_kwargs)
     print(f"[demo] {detector}")
+
+    # ---- Load anti-spoofing model -------------------------------------------
+    _spoof_path = Path(spoof_model_path) if spoof_model_path else _DEFAULT_SPOOF_MODEL_PATH
+
+    print(f"[demo] Loading anti-spoofing model from: {_spoof_path}")
+    # SavedModel directory and new-format .keras (zip) both load fine with
+    # tf.keras.models.load_model in Keras 3.  Legacy HDF5 files (TF2 era)
+    # contain TFOpLambda layers that Keras 3 cannot deserialise — those must
+    # be resaved as SavedModel from the training notebook first.
+    spoof_model = tf.keras.models.load_model(str(_spoof_path), compile=False)
+    print("[demo] Anti-spoofing model loaded.")
 
     # ---- Open video source --------------------------------------------------
     source = video if video else camera
@@ -243,6 +334,25 @@ def run_demo(
 
         # Run detection
         bboxes, scores, landmarks = detector.detect(frame_rgb)
+
+        # Anti-spoofing: classify each detected face crop
+        for bbox in bboxes:
+            x1, y1, x2, y2 = map(int, bbox)
+            face_rgb = frame_rgb[y1:y2, x1:x2]
+            if face_rgb.size == 0:
+                continue
+            label, confidence = predict_real_or_spoof(face_rgb, spoof_model, _SPOOF_CLASS_NAMES)
+            color = (0, 255, 0) if label == "real" else (0, 0, 255)
+            cv2.putText(
+                frame_bgr,
+                f"{label}: {confidence:.2%}",
+                (x1, y1 - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.55,
+                color,
+                2,
+                cv2.LINE_AA,
+            )
 
         t_end = time.perf_counter()
 
@@ -328,6 +438,13 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         metavar="PATH",
         help="Override the default model directory.",
     )
+    parser.add_argument(
+        "--spoof-model",
+        type=str,
+        default=None,
+        metavar="PATH",
+        help="Path to the anti-spoofing Keras model (.keras). Defaults to best_fasd_mobilenetv2_model.keras.",
+    )
     return parser.parse_args(argv)
 
 
@@ -339,4 +456,5 @@ if __name__ == "__main__":
         conf_threshold=args.conf,
         nms_threshold=args.nms,
         model_dir=args.model_dir,
+        spoof_model_path=args.spoof_model,
     )

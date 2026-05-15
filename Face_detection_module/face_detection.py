@@ -113,6 +113,7 @@ logging.basicConfig(
 
 #: Default root for model artefacts (relative to *this file*).
 DEFAULT_MODEL_DIR: Path = Path(__file__).parent / "model"
+# DEFAULT_MODEL_DIR: str = "/home/minhcao/Swinburne/COS30082/CustomProject/-Facial-Recognition-with-Emotion-and-Liveness/Face_detection_module/buffalo_l"
 
 #: Model sub-directory created by buffalo_l unpacking.
 BUFFALO_SUBDIR: str = "buffalo_l"
