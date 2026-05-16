@@ -1,7 +1,7 @@
 import sys
 import torch
 
-from training_module.emotion_module.affectnet.model import build_model
+from model import build_model
 
 MODEL_PATH = "best_model.pth"
 ONNX_PATH = "best_model.onnx"
