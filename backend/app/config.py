@@ -1,0 +1,91 @@
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_CONFIG_PATH = BACKEND_ROOT / "app/configs/config.yaml"
+DEFAULT_WEIGHTS_DIR = BACKEND_ROOT / "weights"
+
+
+def _bool_from_env(name: str, default: bool = False) -> bool:
+	value = os.getenv(name)
+	if value is None:
+		return default
+	return _to_bool(value)
+
+
+def _to_bool(value: Any) -> bool:
+	if isinstance(value, bool):
+		return value
+	if isinstance(value, str):
+		return value.strip().lower() in {"1", "true", "yes", "y", "on"}
+	return bool(value)
+
+
+def _load_yaml_config() -> dict[str, Any]:
+	config_path = Path(os.getenv("BACKEND_CONFIG_PATH", DEFAULT_CONFIG_PATH)).expanduser()
+	if not config_path.is_file():
+		return {}
+
+	with config_path.open("r", encoding="utf-8") as handle:
+		config = yaml.safe_load(handle) or {}
+
+	if not isinstance(config, dict):
+		raise ValueError(f"Config file must contain a YAML object: {config_path}")
+	return config
+
+
+def _get(config: dict[str, Any], *keys: str, default: Any = None) -> Any:
+	value: Any = config
+	for key in keys:
+		if not isinstance(value, dict) or key not in value:
+			return default
+		value = value[key]
+	return value
+
+
+def _resolve_backend_path(path_value: str | Path) -> Path:
+	path = Path(path_value).expanduser()
+	if path.is_absolute():
+		return path
+	return BACKEND_ROOT / path
+
+
+_config = _load_yaml_config()
+
+
+@dataclass(frozen=True)
+class Settings:
+	use_triton: bool = _bool_from_env(
+		"BACKEND_USE_TRITON",
+		_to_bool(_get(_config, "inference", "use_triton", default=False)),
+	)
+	triton_url: str = os.getenv(
+		"TRITON_URL",
+		str(_get(_config, "triton", "url", default="localhost:8000")),
+	)
+	model_version: str = os.getenv(
+		"TRITON_MODEL_VERSION",
+		str(_get(_config, "triton", "model_version", default="")),
+	)
+	request_timeout: float = float(
+		os.getenv(
+			"TRITON_REQUEST_TIMEOUT",
+			str(_get(_config, "triton", "request_timeout", default=10.0)),
+		)
+	)
+	weights_dir: Path = _resolve_backend_path(
+		os.getenv(
+			"BACKEND_WEIGHTS_DIR",
+			_get(_config, "models", "weights_dir", default=DEFAULT_WEIGHTS_DIR),
+		)
+	)
+
+
+settings = Settings()

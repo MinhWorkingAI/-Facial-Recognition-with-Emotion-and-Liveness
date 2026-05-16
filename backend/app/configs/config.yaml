@@ -1,0 +1,10 @@
+inference:
+  use_triton: false
+
+triton:
+  url: localhost:8000
+  model_version: ""
+  request_timeout: 10.0
+
+models:
+  weights_dir: weights

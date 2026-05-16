@@ -1,33 +1,60 @@
+from __future__ import annotations
+
 import io
-import base64
 
+import numpy as np
 from PIL import Image
-
 
 def load_image_from_bytes(contents: bytes) -> Image.Image:
 	image = Image.open(io.BytesIO(contents))
 	return image.convert("RGB")
 
-
-def clamp_box(x: float, y: float, w: float, h: float) -> tuple[float, float, float, float]:
-	x = max(0.0, min(1.0, x))
-	y = max(0.0, min(1.0, y))
-	w = max(0.0, min(1.0, w))
-	h = max(0.0, min(1.0, h))
-	return x, y, w, h
-
-
 def crop_image(image: Image.Image, box: tuple[float, float, float, float]) -> Image.Image:
-	x, y, w, h = clamp_box(*box)
-	width, height = image.size
-	left = int(x * width)
-	top = int(y * height)
-	right = int((x + w) * width)
-	bottom = int((y + h) * height)
-	if right <= left:
-		right = min(width, left + 1)
-	if bottom <= top:
-		bottom = min(height, top + 1)
-	return image.crop((left, top, right, bottom))
+	"""Crop a single normalised (x, y, w, h) box from a PIL image."""
+	x, y, w, h = box
+	img_w, img_h = image.size
+	x1 = int(max(0, x * img_w))
+	y1 = int(max(0, y * img_h))
+	x2 = int(min(img_w, (x + w) * img_w))
+	y2 = int(min(img_h, (y + h) * img_h))
+	x2 = max(x2, x1 + 1)
+	y2 = max(y2, y1 + 1)
+	return image.crop((x1, y1, x2, y2))
+
+
+def crop_faces(
+	image: Image.Image,
+	bboxes: list[tuple[float, float, float, float]],
+	resize: tuple[int, int] | None = None,
+) -> list[Image.Image]:
+	"""
+	Crop all bboxes from image in one pass.
+
+	Parameters
+	----------
+	image   : PIL.Image.Image
+	bboxes  : list of (x, y, w, h) in normalised [0, 1] coordinates
+	resize  : (width, height) to resize each crop; None = no resize
+
+	Returns
+	-------
+	list[PIL.Image.Image]  — one crop per bbox, same order
+	"""
+	img_w, img_h = image.size
+	img_np = np.array(image)
+	crops: list[Image.Image] = []
+
+	for x, y, w, h in bboxes:
+		x1 = int(max(0, x * img_w))
+		y1 = int(max(0, y * img_h))
+		x2 = int(min(img_w, (x + w) * img_w))
+		y2 = int(min(img_h, (y + h) * img_h))
+		crop = Image.fromarray(img_np[y1:y2, x1:x2])
+		if resize is not None:
+			crop = crop.resize(resize, Image.BILINEAR)
+		crops.append(crop)
+
+	return crops
+
 
 

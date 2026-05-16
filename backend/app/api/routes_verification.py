@@ -23,7 +23,7 @@ async def verify_face(file: UploadFile = File(...)) -> RecognitionResponse:
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid image file.")
 
-    result = verification_service.verify(image)
+    result = verification_service.verify(image)[0]
     return RecognitionResponse(recognition=RecognitionResult(**result))
 
 
@@ -45,5 +45,5 @@ async def register_face(
     return RegisterResponse(
         person_id=result["person_id"],
         status=result["status"],
-        message="Registration placeholder completed.",
+        message="Face embedding stored in memory.",
     )
