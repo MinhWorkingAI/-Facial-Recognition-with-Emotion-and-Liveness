@@ -206,7 +206,7 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-training_module/emotion_module/fer/fer2013
+/training_module/emotion_module/fer/fer2013
 /training_module/emotion_module/yolo/YOLO_format
 /training_module/emotion_module/yolo/runs
 /training_module/emotion_module/affectnet/AffectNet

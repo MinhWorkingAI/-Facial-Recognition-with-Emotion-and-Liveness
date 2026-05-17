@@ -16,7 +16,7 @@ from sklearn.metrics import (
     precision_recall_fscore_support,
 )
 
-from training_module.emotion_module.affectnet.model import build_model, get_mobilenet_norm_stats, unfreeze_backbone
+from model import build_model, get_mobilenet_norm_stats, unfreeze_backbone
 
 # Config
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -28,7 +28,7 @@ EPOCHS_FROZEN = 15
 EPOCHS_TUNED = 15
 LR_FROZEN = 1e-3
 LR_TUNED = 1e-4
-SAVE_PATH = "best_model.pth"
+SAVE_PATH = "emotion.pth"
 METRICS_PATH = "metrics/test_metrics.txt"
 HISTORY_CSV_PATH = "metrics/training_history.csv"
 

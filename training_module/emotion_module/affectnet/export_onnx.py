@@ -3,8 +3,8 @@ import torch
 
 from model import build_model
 
-MODEL_PATH = "best_model.pth"
-ONNX_PATH = "best_model.onnx"
+MODEL_PATH = "emotion.pth"
+ONNX_PATH = "emotion.onnx"
 IMG_SIZE = 224
 
 
