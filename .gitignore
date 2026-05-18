@@ -214,9 +214,7 @@ __marimo__/
 # Face_Detection_Module
 /training_module/Face_detection_module/model
 
-# Local model weights
-/backend/weights/*
-!/backend/weights/.gitkeep
+
 
 # Local raw data path for training.py
 RAW_DATA_PATH=C:/Users/bbtnz/OneDrive/Documents/LCC_FASD
