@@ -1,9 +1,3 @@
-/**
- * Draw bounding boxes + labels on the overlay canvas.
- * Designed to match the editorial aesthetic — thin precise marks,
- * mono-typeface labels, accent color for alerts.
- */
-
 const PAPER = '#EFE9DD';
 const ACCENT = '#B53A1F';
 const INK = '#1F1A16';

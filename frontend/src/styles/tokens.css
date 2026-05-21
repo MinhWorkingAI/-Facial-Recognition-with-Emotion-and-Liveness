@@ -1,9 +1,3 @@
-/* ──────────────────────────────────────────────────────────
-   DESIGN TOKENS — Dark Editorial / "Field Bureau, Night Shift"
-   Warm dark base (no blue), amber accent, cream typography.
-   The aesthetic of an old dossier read by lamplight.
-   ────────────────────────────────────────────────────────── */
-
 :root {
   /* ── COLOR / inverted from paper to ink ── */
   --bg:              #0E0C0A;   /* main background, deep warm black */
