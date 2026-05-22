@@ -5,6 +5,7 @@ from torchvision import datasets, transforms
 from PIL import Image
 
 from model import get_convnext_tiny_norm_stats
+from model import get_mobilenet_norm_stats
 
 ONNX_PATH = "emotion.onnx"
 TRAIN_DIR = "AffectNet/Train"

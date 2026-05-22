@@ -224,3 +224,8 @@ RAW_DATA_PATH=C:/Users/bbtnz/OneDrive/Documents/LCC_FASD
 /emotion_module/yolo/YOLO_format
 /emotion_module/yolo/runs
 /emotion_module/affectnet/AffectNet
+
+/training_module/face_recognition_module/dataset
+/training_module/face_recognition_module/checkpoints_resnet18
+/training_module/face_recognition_module/weights
+/backend/weights/arcface.onnx
