@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 
 class AntiSpoofingResult(BaseModel):
-    label: Literal["real", "fake"]
+    label: Literal["real", "spoof"]
     confidence: float
 
 
