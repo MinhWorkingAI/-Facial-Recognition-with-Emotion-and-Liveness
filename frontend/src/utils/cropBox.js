@@ -1,9 +1,9 @@
 /**
- * Hardcoded center crop helpers, per teammate's note:
+ * Hardcoded center crop helpers:
  *
- * "Currently we don't have face detection so just hardcode the x,y,w,h
+ *  Currently we don't have face detection so just hardcode the x,y,w,h
  *  in the frontend first to draw the box, and crop the frame inside
- *  that box to send to emotion and spoof routes."
+ *  that box to send to emotion and spoof routes.
  *
  * The box is defined in normalized (0–1) coordinates so it scales
  * with any camera resolution.

@@ -69,7 +69,6 @@ export default function App() {
     if (route !== 'main') return;
     const face = analysis?.faces?.[0];
     if (!face) return;
-    if (analysis._placeholder) return;
     const rec = face.recognition;
     if (!rec?.matched || rec.label === 'unknown') return;
 

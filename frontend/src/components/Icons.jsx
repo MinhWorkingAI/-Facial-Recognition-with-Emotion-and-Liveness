@@ -1,10 +1,5 @@
 import React from 'react';
 
-/* ── Emotion glyphs ──────────────────────────────────────────
-   Abstract minimal line drawings, not emoji. Each represents
-   the emotion through geometric form alone.
-   ────────────────────────────────────────────────────────── */
-
 const baseProps = {
   viewBox: '0 0 48 48',
   fill: 'none',
@@ -53,18 +48,10 @@ export const EmotionGlyph = ({ emotion = 'neutral' }) => {
 export const PlayIcon = (p) => <svg viewBox="0 0 16 16" fill="currentColor" {...p}><path d="M4 3 L13 8 L4 13 Z"/></svg>;
 export const PauseIcon = (p) => <svg viewBox="0 0 16 16" fill="currentColor" {...p}><rect x="4" y="3" width="3" height="10"/><rect x="9" y="3" width="3" height="10"/></svg>;
 export const PlusIcon = (p) => <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" {...p}><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>;
-export const XIcon = (p) => <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" {...p}><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg>;
 export const CameraOffIcon = (p) => (
   <svg viewBox="0 0 56 56" fill="none" stroke="currentColor" strokeWidth="1.25" {...p}>
     <rect x="6" y="14" width="44" height="32" />
     <circle cx="28" cy="30" r="9" />
     <line x1="8" y1="8" x2="48" y2="50" />
-  </svg>
-);
-export const AlertIcon = (p) => (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" {...p}>
-    <path d="M8 1.5 L15 14 L1 14 Z" />
-    <line x1="8" y1="6" x2="8" y2="9.5" />
-    <circle cx="8" cy="11.5" r="0.5" fill="currentColor" />
   </svg>
 );

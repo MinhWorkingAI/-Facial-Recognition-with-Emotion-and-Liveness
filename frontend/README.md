@@ -1,4 +1,4 @@
-# FaceGuard Frontend
+# Face Recognition with Emotion and Liveness
 
 React + Vite frontend for the COS30082 facial recognition attendance system.
 
@@ -15,8 +15,8 @@ The diagnostics page is what you use right now while detection isn't finished �
 
 ```bash
 cd frontend
-cp .env.example .env       # only first time
-npm install                 # only first time
+cp .env.example .env      
+npm install                 
 npm run dev
 ```
 
@@ -50,7 +50,6 @@ VITE_ENDPOINT_VERIFY=/api/verification/verify
 VITE_ENDPOINT_REGISTER=/api/verification/register
 
 VITE_FRAME_INTERVAL_MS=2000
-VITE_DEMO_PLACEHOLDERS=true
 ```
 
 The Vite dev server proxies all `/api/*` requests to `VITE_BACKEND_URL`, so the backend URL never appears in client code.
@@ -106,11 +105,3 @@ frontend/
         └── global.css
 ```
 
-## Common issues
-
-| Problem                    | Fix                                                    |
-|----------------------------|--------------------------------------------------------|
-| Camera access denied       | Allow webcam permission in the browser                 |
-| Backend unreachable        | Start backend; check `VITE_BACKEND_URL` in `.env`      |
-| White screen on `npm run dev` | Run `npm install` first; check console for errors   |
-| 404 on /api/...            | Backend isn't running or proxy target is wrong         |

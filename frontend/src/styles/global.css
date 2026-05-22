@@ -1,8 +1,5 @@
 @import './tokens.css';
 
-/* ────────────────────────────────────────────
-   RESET + BASE
-   ──────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body, #root { height: 100%; }
 
@@ -31,9 +28,6 @@ ul, ol { list-style: none; }
 
 ::selection { background: var(--accent-tint); color: var(--paper); }
 
-/* ────────────────────────────────────────────
-   TYPOGRAPHY UTILITIES
-   ──────────────────────────────────────────── */
 .t-display {
   font-family: var(--font-display);
   font-weight: 400;
@@ -54,9 +48,6 @@ ul, ol { list-style: none; }
 }
 .t-num { font-family: var(--font-mono); font-feature-settings: 'tnum', 'zero'; font-variant-numeric: tabular-nums; }
 
-/* ────────────────────────────────────────────
-   APP LAYOUT
-   ──────────────────────────────────────────── */
 .app {
   display: grid;
   grid-template-rows: auto 1fr;
@@ -78,9 +69,6 @@ ul, ol { list-style: none; }
   }
 }
 
-/* ────────────────────────────────────────────
-   TOP BAR
-   ──────────────────────────────────────────── */
 .topbar {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -154,9 +142,6 @@ ul, ol { list-style: none; }
 .signal-dot.warn { background: var(--signal-warn); }
 @keyframes pulse { 0%,100% { box-shadow: 0 0 0 2px var(--signal-stop-tint); } 50% { box-shadow: 0 0 0 6px var(--signal-stop-tint); } }
 
-/* ────────────────────────────────────────────
-   CAMERA VIEW
-   ──────────────────────────────────────────── */
 .camera { display: grid; grid-template-rows: auto 1fr auto; min-height: 0; }
 .camera__head {
   display: flex; justify-content: space-between; align-items: baseline;
@@ -237,9 +222,6 @@ ul, ol { list-style: none; }
 .camera__counter { font-family: var(--font-mono); font-size: var(--t-tiny); text-transform: uppercase; letter-spacing: 0.12em; color: var(--paper-3); }
 .camera__counter strong { color: var(--accent); font-weight: 600; margin-right: 6px; }
 
-/* ────────────────────────────────────────────
-   BUTTONS
-   ──────────────────────────────────────────── */
 .btn {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 10px 18px;
@@ -274,9 +256,6 @@ ul, ol { list-style: none; }
 .btn--danger-ghost { background: transparent; color: var(--signal-stop); border-color: var(--signal-stop); }
 .btn--danger-ghost:hover:not(:disabled) { background: var(--signal-stop-tint); }
 
-/* ────────────────────────────────────────────
-   RIGHT COLUMN
-   ──────────────────────────────────────────── */
 .column {
   display: flex; flex-direction: column; gap: 18px;
   overflow-y: auto; padding-right: 4px;
@@ -287,9 +266,6 @@ ul, ol { list-style: none; }
 .column::-webkit-scrollbar-thumb { background: var(--edge); }
 .column::-webkit-scrollbar-thumb:hover { background: var(--edge-strong); }
 
-/* ────────────────────────────────────────────
-   SECTION BLOCKS
-   ──────────────────────────────────────────── */
 .section { position: relative; }
 .section__head {
   display: flex; justify-content: space-between; align-items: baseline;
@@ -301,9 +277,6 @@ ul, ol { list-style: none; }
 .section__title { font-family: var(--font-display); font-size: var(--t-h4); font-weight: 400; font-style: italic; color: var(--paper); }
 .section__aside { font-family: var(--font-mono); font-size: var(--t-tiny); letter-spacing: 0.12em; color: var(--paper-3); text-transform: uppercase; }
 
-/* ────────────────────────────────────────────
-   DETECTION READOUTS
-   ──────────────────────────────────────────── */
 .readout { padding: 12px 0; border-bottom: 1px solid var(--edge-soft); }
 .readout:last-child { border-bottom: none; }
 
@@ -342,38 +315,6 @@ ul, ol { list-style: none; }
 .emotion-glyph { display: inline-block; width: 44px; height: 44px; flex-shrink: 0; color: var(--paper); }
 .emotion-glyph svg { width: 100%; height: 100%; }
 
-/* ────────────────────────────────────────────
-   PLACEHOLDER BADGE
-   ──────────────────────────────────────────── */
-.placeholder-tag {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 2px 8px 3px;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  font-weight: 600;
-  color: var(--accent);
-  background: repeating-linear-gradient(-45deg, var(--accent-tint), var(--accent-tint) 4px, transparent 4px, transparent 8px);
-  border: 1px solid var(--accent);
-  border-radius: var(--r-sm);
-}
-.placeholder-tag::before { content: ''; display: inline-block; width: 6px; height: 6px; background: var(--accent); border-radius: 50%; }
-
-.placeholder-banner {
-  display: flex; align-items: flex-start; gap: 10px;
-  padding: 12px 14px;
-  background: var(--accent-tint);
-  border-left: 3px solid var(--accent);
-  margin-bottom: 14px;
-}
-.placeholder-banner__icon { flex-shrink: 0; color: var(--accent); margin-top: 2px; }
-.placeholder-banner__title { font-family: var(--font-mono); font-size: var(--t-tiny); letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; color: var(--accent); margin-bottom: 2px; }
-.placeholder-banner__text { font-size: var(--t-small); color: var(--paper-2); line-height: 1.45; }
-
-/* ────────────────────────────────────────────
-   REGISTERED FACES + LOG
-   ──────────────────────────────────────────── */
 .reg-list { display: flex; flex-direction: column; }
 .reg-list:empty::after {
   content: 'No registrations on record';
@@ -414,9 +355,6 @@ ul, ol { list-style: none; }
 .log__badge--new { background: var(--signal-go-tint); color: var(--signal-go); }
 .log__badge--spoof { background: var(--signal-stop-tint); color: var(--signal-stop); border: 1px solid var(--signal-stop); }
 
-/* ────────────────────────────────────────────
-   MODAL
-   ──────────────────────────────────────────── */
 .modal-overlay {
   position: fixed; inset: 0;
   background: rgba(5, 4, 2, 0.7);
@@ -453,9 +391,6 @@ ul, ol { list-style: none; }
 .modal__error { font-family: var(--font-mono); font-size: var(--t-tiny); color: var(--signal-stop); margin-bottom: 14px; letter-spacing: 0.06em; }
 .modal__actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 26px; }
 
-/* ────────────────────────────────────────────
-   TOASTS
-   ──────────────────────────────────────────── */
 .toasts {
   position: fixed; top: 100px; right: 28px;
   display: flex; flex-direction: column; gap: 8px;
@@ -479,11 +414,6 @@ ul, ol { list-style: none; }
 .toast--warn    { border-left-color: var(--signal-warn); }
 @keyframes toastIn { from { opacity: 0; transform: translateX(16px); } }
 
-/* ════════════════════════════════════════════
-   ╔════════════════════════════════════════╗
-   ║      DIAGNOSTICS PAGE                  ║
-   ╚════════════════════════════════════════╝
-   ════════════════════════════════════════════ */
 .diag {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(380px, 1fr);
@@ -729,9 +659,6 @@ ul, ol { list-style: none; }
 .conn-panel__value.err { color: var(--signal-stop); }
 .conn-panel__url { font-family: var(--font-mono); font-size: var(--t-tiny); color: var(--paper-3); margin-top: 2px; }
 
-/* ────────────────────────────────────────────
-   RESPONSIVE
-   ──────────────────────────────────────────── */
 @media (max-width: 1100px) {
   .topbar { grid-template-columns: 1fr auto; padding: 16px 20px 0; }
   .topbar__nav { display: none; }

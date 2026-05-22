@@ -1,32 +1,32 @@
 :root {
   /* ── COLOR / inverted from paper to ink ── */
-  --bg:              #0E0C0A;   /* main background, deep warm black */
-  --bg-2:            #161311;   /* lifted surfaces */
-  --bg-3:            #211D17;   /* recessed / inner cards */
+  --bg:              #0E0C0A;  
+  --bg-2:            #161311;  
+  --bg-3:            #211D17;  
   --bg-4:            #2A251D;
-  --edge:            #3A3329;   /* primary dividers */
+  --edge:            #3A3329;   
   --edge-soft:       #28231C;
   --edge-strong:     #4A4136;
 
-  --paper:           #E8DFC9;   /* primary text — warm aged cream */
-  --paper-2:         #B5AB94;   /* secondary text */
-  --paper-3:         #837A66;   /* tertiary */
+  --paper:           #E8DFC9;  
+  --paper-2:         #B5AB94;   
+  --paper-3:         #837A66;   
   --paper-mute:      #555044;
   --paper-faint:     #3A352D;
 
-  --accent:          #E2823A;   /* warm amber — primary accent */
+  --accent:          #E2823A; 
   --accent-bright:   #F5A05A;
   --accent-deep:     #B86225;
   --accent-tint:     rgba(226, 130, 58, 0.14);
   --accent-glow:     rgba(226, 130, 58, 0.4);
 
-  --signal-go:       #8AAF5E;   /* sage green */
+  --signal-go:       #8AAF5E;   
   --signal-go-tint:  rgba(138, 175, 94, 0.16);
 
   --signal-warn:     #D9A33B;
   --signal-warn-tint: rgba(217, 163, 59, 0.16);
 
-  --signal-stop:     #D14A2F;   /* alert red, distinct from amber */
+  --signal-stop:     #D14A2F;   
   --signal-stop-tint: rgba(209, 74, 47, 0.16);
 
   /* ── camera viewport (the darkest area, for video contrast) ── */

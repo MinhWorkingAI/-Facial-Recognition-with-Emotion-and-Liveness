@@ -1,15 +1,11 @@
 import React from 'react';
 import { EmotionGlyph } from './Icons.jsx';
-import { PlaceholderTag, PlaceholderBanner } from './PlaceholderBadge.jsx';
 
 export default function DetectionPanel({ analysis }) {
   const face = analysis?.faces?.[0];
-  const isPlaceholder = analysis?._placeholder === true;
-
   const recognition = face?.recognition;
   const emotion = face?.emotion;
   const antiSpoofing = face?.anti_spoofing;
-
   const noFace = !face;
 
   return (
@@ -17,26 +13,16 @@ export default function DetectionPanel({ analysis }) {
       <header className="section__head">
         <div className="section__head-title">
           <span className="section__num">§ 02</span>
-          <span className="section__title">The Subject</span>
+          <span className="section__title">People on Screen</span>
         </div>
         <span className="section__aside">Live readings</span>
       </header>
 
-      {isPlaceholder && (
-        <PlaceholderBanner
-          title="Placeholder readings"
-          text="The detection and recognition modules are not yet wired into the pipeline. Values shown below are mock fixtures so the layout can be reviewed."
-        />
-      )}
-
       {/* IDENTITY */}
       <div className="readout">
-        <div className="readout__label">
-          Identity
-          {recognition?._placeholder && <PlaceholderTag label="Mock" />}
-        </div>
+        <div className="readout__label">Identity</div>
         {noFace ? (
-          <div className="readout__value readout__value--mute">No subject in frame</div>
+          <div className="readout__value readout__value--mute">No one in frame</div>
         ) : recognition?.matched && recognition.label !== 'unknown' ? (
           <>
             <div className="readout__value readout__value--accent">{recognition.label}</div>
@@ -44,7 +30,7 @@ export default function DetectionPanel({ analysis }) {
           </>
         ) : (
           <>
-            <div className="readout__value readout__value--mute">Unenrolled</div>
+            <div className="readout__value readout__value--mute">Unregistered</div>
             <div className="readout__sub">
               <span>No match in registry</span>
               <span className="t-num">
@@ -57,10 +43,7 @@ export default function DetectionPanel({ analysis }) {
 
       {/* EMOTION */}
       <div className="readout">
-        <div className="readout__label">
-          Affect
-          {emotion?._placeholder && <PlaceholderTag label="Mock" />}
-        </div>
+        <div className="readout__label">Affect</div>
         {noFace ? (
           <div className="readout__value readout__value--mute">—</div>
         ) : (
@@ -68,9 +51,7 @@ export default function DetectionPanel({ analysis }) {
             <div className="readout__row">
               <EmotionGlyph emotion={emotion?.label} />
               <div style={{ flex: 1 }}>
-                <div className="readout__value">
-                  {capitalize(emotion?.label) || '—'}
-                </div>
+                <div className="readout__value">{capitalize(emotion?.label) || '—'}</div>
               </div>
             </div>
             <ConfidenceBar value={emotion?.confidence ?? 0} />
@@ -80,10 +61,7 @@ export default function DetectionPanel({ analysis }) {
 
       {/* LIVENESS */}
       <div className="readout">
-        <div className="readout__label">
-          Liveness
-          {antiSpoofing?._placeholder && <PlaceholderTag label="Mock" />}
-        </div>
+        <div className="readout__label">Liveness</div>
         {noFace ? (
           <div className="readout__value readout__value--mute">—</div>
         ) : antiSpoofing?.label === 'fake' ? (
@@ -122,10 +100,7 @@ function ConfidenceBar({ value = 0, variant }) {
     <div className="readout__sub">
       <span>Confidence</span>
       <span className="readout__sub-bar">
-        <span
-          className={`readout__sub-bar-fill ${fillClass}`}
-          style={{ width: `${pct * 100}%` }}
-        />
+        <span className={`readout__sub-bar-fill ${fillClass}`} style={{ width: `${pct * 100}%` }} />
       </span>
       <span className="t-num">{(pct * 100).toFixed(1)}%</span>
     </div>

@@ -58,7 +58,7 @@ export default function CameraView({
       <div className="camera__head">
         <div className="camera__head-title">
           <span className="camera__section-num">§ 01</span>
-          <span className="camera__section-title">Field of View</span>
+          <span className="camera__section-title">Webcam</span>
         </div>
         <span className="t-label">Live, real-time capture</span>
       </div>
