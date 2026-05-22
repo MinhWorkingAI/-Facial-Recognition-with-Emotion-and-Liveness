@@ -20,7 +20,7 @@ export default function TopBar({ cameraActive, connected, route, onNavigate }) {
   return (
     <header className="topbar">
       <div className="topbar__brand">
-        <div className="topbar__brand-mark">Facial Recognition <em>with Emotion and Liveness</em></div>
+        <div className="topbar__brand-mark">Facial Recognition <em>with Emotion and Liveness Detection</em></div>
       </div>
 
       <nav className="topbar__nav">

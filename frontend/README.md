@@ -6,10 +6,10 @@ React + Vite frontend for the COS30082 facial recognition attendance system.
 
 The top bar lets you switch between:
 
-1. **§ 01 — The Station** — main attendance UI (camera + live detection + registry + log).
-2. **§ 02 — Diagnostics** — per-endpoint test page (run each API individually, see response, latency, status).
+1. **§ 01 — Main Page** — main attendance UI (camera + live detection + registry + log).
+2. **§ 02 — Dev Page** — per-endpoint test page (run each API individually, see response, latency, status).
 
-The diagnostics page is what you use right now while detection isn't finished — it draws a hardcoded crop box on the camera, takes the crop, and sends it to each endpoint with a "Run test" button.
+The dev page is what you use right now while detection isn't finished — it draws a hardcoded crop box on the camera, takes the crop, and sends it to each endpoint with a "Run test" button.
 
 ## Quick start
 
@@ -88,7 +88,6 @@ frontend/
     │   ├── RegisterModal.jsx
     │   ├── Toasts.jsx
     │   ├── Icons.jsx
-    │   ├── PlaceholderBadge.jsx
     │   ├── DiagnosticsView.jsx     ← test page
     │   └── EndpointCard.jsx        ← test card
     ├── hooks/
