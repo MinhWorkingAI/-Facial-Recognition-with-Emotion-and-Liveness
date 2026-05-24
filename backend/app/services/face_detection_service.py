@@ -44,8 +44,8 @@ class FaceDetectionService(BaseService):
 
 		# this is a dummy implementation; replace with actual model inference but follow the same output format
 		# WARNING: Must use crop_faces util to ensure the crop coordinates are consistent with the dummy bbox format, otherwise downstream models will break when we switch to real face detection outputs
-		box = (0.3, 0.3, 0.4, 0.4)
-		crops = crop_faces(image, [box], resize=(512, 512))
+		box = (0.275, 0.14, 0.45, 0.62)
+		crops = crop_faces(image, [box])
 		return [
 			{
 				"bbox": box,

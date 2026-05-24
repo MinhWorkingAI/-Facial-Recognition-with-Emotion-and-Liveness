@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class InferenceService:
     def __init__(
         self,
-        liveness_threshold: float = 0.5,
+        liveness_threshold: float = 0.25,
         verification_threshold: float = 0.6,
         use_triton: bool | None = None,
         triton_url: str | None = None,
