@@ -64,7 +64,7 @@ export default function DetectionPanel({ analysis }) {
         <div className="readout__label">Liveness</div>
         {noFace ? (
           <div className="readout__value readout__value--mute">—</div>
-        ) : antiSpoofing?.label === 'fake' ? (
+        ) : antiSpoofing?.label === 'spoof' ? (
           <>
             <div className="readout__row">
               <span className="readout__indicator stop" />

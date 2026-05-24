@@ -229,3 +229,4 @@ RAW_DATA_PATH=C:/Users/bbtnz/OneDrive/Documents/LCC_FASD
 /training_module/face_recognition_module/checkpoints_resnet18
 /training_module/face_recognition_module/weights
 /backend/weights/arcface.onnx
+/backend/captures/

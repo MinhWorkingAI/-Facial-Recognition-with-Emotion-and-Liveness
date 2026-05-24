@@ -8,3 +8,7 @@ triton:
 
 models:
   weights_dir: weights
+
+captures:
+  enabled: true
+  dir: captures
