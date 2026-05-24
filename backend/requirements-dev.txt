@@ -1,0 +1,10 @@
+-r requirements.txt
+ 
+# testing
+pytest
+pytest-timeout
+pytest-order
+ 
+# lint and format
+ruff
+black
