@@ -58,7 +58,7 @@ export function drawFaces(ctx, faces, imgW, imgH, mirrored = true) {
 
     if (mirrored) bx = canvas.width - bx - bw;
 
-    const isSpoof = face.anti_spoofing?.label === 'fake';
+    const isSpoof = face.anti_spoofing?.label === 'spoof';
     const color = isSpoof ? ACCENT : PAPER;
 
     // Corner brackets

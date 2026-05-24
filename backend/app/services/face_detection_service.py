@@ -268,73 +268,24 @@ class FaceDetectionService(BaseService):
     # Public API
     # ------------------------------------------------------------------
 
-    def detect(self, image: Image.Image) -> list[dict]:
-        """
-        Run face detection on a full PIL image.
+	def detect(self, image: Image.Image) -> list[dict]:
+		"""
+		Output per face:
+		  {
+		    "bbox":       (x, y, w, h),  # normalised [0, 1] coordinates
+		    "confidence": float,          # detection score 0.0 – 1.0
+		    "crop":       Image.Image     # cropped face region
+		  }
+		"""
 
-        Output per face:
-          {
-            "bbox":       (x, y, w, h),  # normalized [0, 1] — x,y = top-left
-            "confidence": float,          # detection score 0.0 – 1.0
-            "crop":       PIL.Image.Image # face region cropped from original
-          }
-
-        Returns an empty list when no faces are found.
-        """
-        img_w, img_h = image.size
-
-        # Convert to numpy uint8 RGB for BaseService
-        img_np = np.asarray(image.convert("RGB"), dtype=np.uint8)
-
-        self._ensure_loaded()
-
-        # preprocess → infer → postprocess
-        # postprocess returns pixel-space (x1,y1,x2,y2) in 640x640 space
-        input_tensors = self.preprocess(img_np)
-        raw_outputs   = self._infer(input_tensors)
-        detections    = self.postprocess(raw_outputs)
-
-        if not detections:
-            return []
-
-        results: list[dict] = []
-        bboxes_normalized: list[tuple] = []
-
-        for det in detections:
-            x1, y1, x2, y2 = det["bbox_pixels"]
-
-            # The model ran on a 640x640 resized image.
-            # Scale the pixel coords back to the original image dimensions.
-            x1_orig = x1 / self.INPUT_SIZE[0] * img_w
-            y1_orig = y1 / self.INPUT_SIZE[1] * img_h
-            x2_orig = x2 / self.INPUT_SIZE[0] * img_w
-            y2_orig = y2 / self.INPUT_SIZE[1] * img_h
-
-            # Convert (x1,y1,x2,y2) pixel → (x,y,w,h) normalized [0,1]
-            # x,y is the top-left corner normalized by image dimensions
-            x_norm = x1_orig / img_w
-            y_norm = y1_orig / img_h
-            w_norm = (x2_orig - x1_orig) / img_w
-            h_norm = (y2_orig - y1_orig) / img_h
-
-            # Clamp to [0, 1] — model occasionally predicts slightly outside bounds
-            x_norm = float(np.clip(x_norm, 0.0, 1.0))
-            y_norm = float(np.clip(y_norm, 0.0, 1.0))
-            w_norm = float(np.clip(w_norm, 0.0, 1.0 - x_norm))
-            h_norm = float(np.clip(h_norm, 0.0, 1.0 - y_norm))
-
-            bboxes_normalized.append((x_norm, y_norm, w_norm, h_norm))
-
-        # Use the shared crop_faces utility — MUST use this, not custom cropping,
-        # so that every downstream service (liveness, emotion, verification)
-        # gets crops from exactly the same coordinate math.
-        crops = crop_faces(image, bboxes_normalized)
-
-        for bbox, det, crop in zip(bboxes_normalized, detections, crops):
-            results.append({
-                "bbox":       bbox,
-                "confidence": det["confidence"],
-                "crop":       crop,
-            })
-
-        return results
+		# this is a dummy implementation; replace with actual model inference but follow the same output format
+		# WARNING: Must use crop_faces util to ensure the crop coordinates are consistent with the dummy bbox format, otherwise downstream models will break when we switch to real face detection outputs
+		box = (0.3, 0.3, 0.4, 0.4)
+		crops = crop_faces(image, [box], resize=(512, 512))
+		return [
+			{
+				"bbox": box,
+				"confidence": 0.6,
+				"crop": crops[0],
+			}
+		]

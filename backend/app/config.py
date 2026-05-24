@@ -11,6 +11,7 @@ import yaml
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIG_PATH = BACKEND_ROOT / "app/configs/config.yaml"
 DEFAULT_WEIGHTS_DIR = BACKEND_ROOT / "weights"
+DEFAULT_CAPTURES_DIR = BACKEND_ROOT / "captures"
 
 
 def _bool_from_env(name: str, default: bool = False) -> bool:
@@ -84,6 +85,16 @@ class Settings:
 		os.getenv(
 			"BACKEND_WEIGHTS_DIR",
 			_get(_config, "models", "weights_dir", default=DEFAULT_WEIGHTS_DIR),
+		)
+	)
+	captures_enabled: bool = _bool_from_env(
+		"BACKEND_SAVE_CAPTURES",
+		_to_bool(_get(_config, "captures", "enabled", default=False)),
+	)
+	captures_dir: Path = _resolve_backend_path(
+		os.getenv(
+			"BACKEND_CAPTURES_DIR",
+			_get(_config, "captures", "dir", default=DEFAULT_CAPTURES_DIR),
 		)
 	)
 

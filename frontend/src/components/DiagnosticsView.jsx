@@ -346,7 +346,7 @@ export default function DiagnosticsView({ camera }) {
             { key: 'Label',
               val: b.anti_spoofing?.label || '—',
               kind: b.anti_spoofing?.label === 'real' ? 'go'
-                 : b.anti_spoofing?.label === 'fake' ? 'stop' : '' },
+                 : b.anti_spoofing?.label === 'spoof' ? 'stop' : '' },
             { key: 'Confidence', val: `${((b.anti_spoofing?.confidence ?? 0) * 100).toFixed(1)}%` },
           ]}
         />
