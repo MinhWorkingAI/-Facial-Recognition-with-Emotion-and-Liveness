@@ -23,6 +23,8 @@ class FrameAnalysisResponse(BaseModel):
 class FaceResult:
     bbox: tuple                  # (x, y, w, h) normalised
     detection_score: float
+    crop_width: int = 0
+    crop_height: int = 0
     is_live: bool = False
     liveness_score: float = 0.0
     emotion: str = ""

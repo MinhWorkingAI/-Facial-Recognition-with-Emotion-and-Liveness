@@ -64,10 +64,17 @@ class InferenceService:
         face_crops = [d["crop"] for d in detections]
 
         # Build initial FaceResult list
-        face_results = [
-            FaceResult(bbox=bbox, detection_score=score)
-            for bbox, score in zip(bboxes, scores)
-        ]
+        face_results = []
+        for bbox, score, crop in zip(bboxes, scores, face_crops):
+            crop_width, crop_height = crop.size
+            face_results.append(
+                FaceResult(
+                    bbox=bbox,
+                    detection_score=score,
+                    crop_width=crop_width,
+                    crop_height=crop_height,
+                )
+            )
 
         # Batch anti-spoofing → filter live faces
         face_results = self.run_anti_spoofing_batch(face_crops, face_results)

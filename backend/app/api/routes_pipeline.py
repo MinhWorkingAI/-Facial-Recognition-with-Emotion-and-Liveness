@@ -35,8 +35,8 @@ async def analyze_frame(file: UploadFile = File(...)) -> FrameAnalysisResponse:
             face=DetectedFace(
                 bbox=NormalizedBox(x=fr.bbox[0], y=fr.bbox[1], w=fr.bbox[2], h=fr.bbox[3]),
                 detection_confidence=fr.detection_score,
-                crop_width=0,
-                crop_height=0,
+                crop_width=fr.crop_width,
+                crop_height=fr.crop_height,
             ),
             emotion=EmotionResult(label=fr.emotion, confidence=fr.emotion_score),
             anti_spoofing=AntiSpoofingResult(
