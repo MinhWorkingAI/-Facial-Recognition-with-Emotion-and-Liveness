@@ -57,9 +57,11 @@ jobs:
         shell: bash
         working-directory: training_module/emotion_module/affectnet
         run: |
-          set -euo pipefail
+          set -eo pipefail
+          export NVCC_PREPEND_FLAGS="${NVCC_PREPEND_FLAGS-}"
           source "$(conda info --base)/etc/profile.d/conda.sh"
           conda activate "$EMOTION_CONDA_ENV"
+          set -u
           python train.py
           python export_onnx.py
 
