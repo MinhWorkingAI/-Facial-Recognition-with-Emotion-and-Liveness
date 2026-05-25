@@ -9,9 +9,7 @@ jobs:
     env:
       SPOOF_CONDA_ENV: "tensorflow_spoof"
       EMOTION_CONDA_ENV: "emotion_detection"
-      SPOOF_DATASET_SRC: "${{ runner.home }}/Desktop/Datasets/LCC_FASD"
       SPOOF_DATASET_DEST: "training_module/anti_spoofing_module_MobileNetV2"
-      EMOTION_DATASET_SRC: "${{ runner.home }}/Desktop/Datasets/emotion/AffectNet"
       EMOTION_DATASET_DEST: "training_module/emotion_module/affectnet/AffectNet"
       WEIGHTS_DIR: "backend/weights"
     steps:
@@ -22,6 +20,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          SPOOF_DATASET_SRC="$HOME/Desktop/Datasets/LCC_FASD"
+          EMOTION_DATASET_SRC="$HOME/Desktop/Datasets/emotion/AffectNet"
+
           if [ ! -d "$SPOOF_DATASET_SRC" ]; then
             echo "Missing spoof dataset: $SPOOF_DATASET_SRC" >&2
             exit 1
