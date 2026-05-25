@@ -11,4 +11,4 @@ models:
 
 captures:
   enabled: true
-  dir: captures
+  dir: captures/screenshots

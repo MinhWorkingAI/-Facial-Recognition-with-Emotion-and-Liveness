@@ -11,7 +11,7 @@ import yaml
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIG_PATH = BACKEND_ROOT / "app/configs/config.yaml"
 DEFAULT_WEIGHTS_DIR = BACKEND_ROOT / "weights"
-DEFAULT_CAPTURES_DIR = BACKEND_ROOT / "captures"
+DEFAULT_CAPTURES_DIR = BACKEND_ROOT / "captures" / "screenshots"
 
 
 def _bool_from_env(name: str, default: bool = False) -> bool:

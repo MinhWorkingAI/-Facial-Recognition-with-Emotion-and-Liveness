@@ -2,7 +2,7 @@
 # Enable targets under `targets` and set each `root`.
 
 repo_root: ""
-captures_dir: backend/captures
+captures_dir: backend/captures/screenshots
 manifest_path: ""
 
 min_confidence: 0.7
