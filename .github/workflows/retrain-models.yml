@@ -1,0 +1,70 @@
+name: Retrain Models
+
+on:
+  workflow_dispatch:
+
+jobs:
+  retrain:
+    runs-on: self-hosted
+    env:
+      SPOOF_CONDA_ENV: "tensorflow_spoof"
+      EMOTION_CONDA_ENV: "emotion_detection"
+      SPOOF_DATASET_SRC: "${{ env.HOME }}/Desktop/Datasets/LCC_FASD"
+      SPOOF_DATASET_DEST: "training_module/anti_spoofing_module_MobileNetV2"
+      EMOTION_DATASET_SRC: "${{ env.HOME }}/Desktop/Datasets/emotion/AffectNet"
+      EMOTION_DATASET_DEST: "training_module/emotion_module/affectnet/AffectNet"
+      WEIGHTS_DIR: "backend/weights"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copy datasets into workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -d "$SPOOF_DATASET_SRC" ]; then
+            echo "Missing spoof dataset: $SPOOF_DATASET_SRC" >&2
+            exit 1
+          fi
+          if [ ! -d "$EMOTION_DATASET_SRC" ]; then
+            echo "Missing emotion dataset: $EMOTION_DATASET_SRC" >&2
+            exit 1
+          fi
+
+          mkdir -p "$SPOOF_DATASET_DEST" "$EMOTION_DATASET_DEST"
+          cp -a "$SPOOF_DATASET_SRC" "$SPOOF_DATASET_DEST/"
+          cp -a "$EMOTION_DATASET_SRC"/* "$EMOTION_DATASET_DEST/"
+
+      - name: Train anti-spoofing model
+        shell: bash
+        working-directory: training_module/anti_spoofing_module_MobileNetV2
+        run: |
+          set -euo pipefail
+          source "$(conda info --base)/etc/profile.d/conda.sh"
+          conda activate "$SPOOF_CONDA_ENV"
+          python anti_spoofing.py
+          python export_onnx.py model/fasd_mobilenetv2_model.h5 model/fasd_mobilenetv2_model.onnx
+
+      - name: Publish anti-spoofing weights
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$WEIGHTS_DIR"
+          cp -f training_module/anti_spoofing_module_MobileNetV2/model/fasd_mobilenetv2_model.onnx "$WEIGHTS_DIR/anti_spoofing.onnx"
+
+      - name: Train emotion model
+        shell: bash
+        working-directory: training_module/emotion_module/affectnet
+        run: |
+          set -euo pipefail
+          source "$(conda info --base)/etc/profile.d/conda.sh"
+          conda activate "$EMOTION_CONDA_ENV"
+          python train.py
+          python export_onnx.py
+
+      - name: Publish emotion weights
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$WEIGHTS_DIR"
+          cp -f training_module/emotion_module/affectnet/emotion.onnx "$WEIGHTS_DIR/emotion.onnx"
