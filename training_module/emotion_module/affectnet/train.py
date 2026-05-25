@@ -16,27 +16,27 @@ from sklearn.metrics import (
     precision_recall_fscore_support,
 )
 
-from model import build_model, get_convnext_tiny_norm_stats, unfreeze_backbone
+from model import build_model, get_mobilenet_norm_stats, unfreeze_backbone
 
 # Config
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 TRAIN_DIR = "AffectNet/Train"
 TEST_DIR = "AffectNet/Test"
 IMG_SIZE = 224
-BATCH_SIZE = 32
-EPOCHS_FROZEN = 15
-EPOCHS_TUNED = 15
+BATCH_SIZE = 128
+EPOCHS_FROZEN = 30
+EPOCHS_TUNED = 35
 LR_FROZEN = 1e-3
-LR_TUNED = 5e-5
+LR_TUNED = 1e-4
 SAVE_PATH = "emotion.pth"
 METRICS_PATH = "metrics/test_metrics.txt"
 HISTORY_CSV_PATH = "metrics/training_history.csv"
 
 print(f"Using device: {DEVICE}")
 
-NORM_MEAN, NORM_STD = get_convnext_tiny_norm_stats()
-print(f"ConvNeXt-Tiny normalize mean: {NORM_MEAN}")
-print(f"ConvNeXt-Tiny normalize std : {NORM_STD}")
+NORM_MEAN, NORM_STD = get_mobilenet_norm_stats()
+print(f"MobileNetV2 normalize mean: {NORM_MEAN}")
+print(f"MobileNetV2 normalize std : {NORM_STD}")
 
 # Transforms
 train_transform = transforms.Compose([
@@ -259,14 +259,14 @@ if __name__ == "__main__":
     # Phase 1 — frozen backbone
     model = build_model(num_classes=len(EMOTIONS), freeze_backbone=True).to(DEVICE)
     # optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=LR_TUNED)
-    optimizer = AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=LR_FROZEN, weight_decay=5e-4)
+    optimizer = AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=LR_FROZEN, weight_decay=1e-4)
     scheduler = ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.5)
     h1 = run_training(model, optimizer, scheduler, EPOCHS_FROZEN, "Phase 1 — Frozen Backbone")
 
     # Phase 2 — fine-tune
-    model = unfreeze_backbone(model, unfreeze_from_layer=5)
+    model = unfreeze_backbone(model, unfreeze_from_layer=10)
     # optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=LR_TUNED)
-    optimizer = AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=LR_TUNED, weight_decay=5e-4)
+    optimizer = AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=LR_TUNED, weight_decay=1e-4)
     scheduler = ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.5)
     h2 = run_training(model, optimizer, scheduler, EPOCHS_TUNED, "Phase 2 — Fine-tuning")
 

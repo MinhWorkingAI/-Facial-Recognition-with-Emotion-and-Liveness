@@ -1,5 +1,4 @@
 import sys
-import re
 import torch
 
 from model import build_model
@@ -10,13 +9,9 @@ IMG_SIZE = 224
 
 
 def _infer_num_classes(state_dict: dict) -> int:
-    candidate_keys = sorted(
-        (key for key in state_dict if re.match(r"^classifier\.\d+\.(weight|bias)$", key)),
-        key=lambda key: int(key.split(".")[1]),
-        reverse=True,
-    )
-    for key in candidate_keys:
-        return int(state_dict[key].shape[0])
+    for key in ("classifier.4.weight", "classifier.4.bias"):
+        if key in state_dict:
+            return int(state_dict[key].shape[0])
     raise ValueError("Unable to infer num_classes from checkpoint.")
 
 
@@ -36,7 +31,9 @@ def export_onnx(model_path: str, onnx_path: str) -> None:
         input_names=["input"],
         output_names=["logits"],
         dynamic_axes={"input": {0: "batch"}, "logits": {0: "batch"}},
-        opset_version=13,
+        opset_version=17,
+        export_params=True,
+        use_external_data_format=False,
     )
 
 
