@@ -217,11 +217,11 @@ __marimo__/
 # Anti-spoofing module (MobileNetV2 / LCC_FASD)
 # Training writes checkpoints, metrics, and plots to model/ (see anti_spoofing.py)
 /training_module/anti_spoofing_module_MobileNetV2/model/
-# Local LCC_FASD copies if you train from inside this folder (RAW_DATA_DIR = cwd)
-/training_module/anti_spoofing_module_MobileNetV2/LCC_FASD/
-/training_module/anti_spoofing_module_MobileNetV2/LCC_FASD_training/
-/training_module/anti_spoofing_module_MobileNetV2/LCC_FASD_development/
-/training_module/anti_spoofing_module_MobileNetV2/LCC_FASD_evaluation/
+# LCC_FASD raw dataset (repo root, training folder, or any clone path)
+LCC_FASD/
+LCC_FASD_training/
+LCC_FASD_development/
+LCC_FASD_evaluation/
 
 /emotion_module/fer/fer2013
 /emotion_module/yolo/YOLO_format
@@ -229,10 +229,6 @@ __marimo__/
 /emotion_module/affectnet/AffectNet
 
 /anti_spoofing_module_MobileNetV2/model/
-/anti_spoofing_module_MobileNetV2/LCC_FASD/
-/anti_spoofing_module_MobileNetV2/LCC_FASD_training/
-/anti_spoofing_module_MobileNetV2/LCC_FASD_development/
-/anti_spoofing_module_MobileNetV2/LCC_FASD_evaluation/
 
 /training_module/face_recognition_module/dataset
 /training_module/face_recognition_module/checkpoints_resnet18
