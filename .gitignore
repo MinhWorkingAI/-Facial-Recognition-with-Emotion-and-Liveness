@@ -211,6 +211,8 @@ __marimo__/
 /training_module/emotion_module/yolo/runs
 /training_module/emotion_module/affectnet/AffectNet
 
+AffectNet/
+
 # Face_Detection_Module
 /training_module/Face_detection_module/model
 

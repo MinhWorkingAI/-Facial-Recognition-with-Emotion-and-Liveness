@@ -24,7 +24,7 @@ from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classifica
 #  LCC_FASD_development/
 #  LCC_FASD_evaluation/
 
-RAW_DATA_DIR = Path.cwd()
+RAW_DATA_DIR = Path("LCC_FASD")
 
 MODEL_DIR = Path("model")
 MODEL_DIR.mkdir(parents=True, exist_ok=True)
