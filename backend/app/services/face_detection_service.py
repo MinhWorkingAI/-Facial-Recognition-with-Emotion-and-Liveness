@@ -6,7 +6,7 @@ import numpy as np
 from PIL import Image
 
 from app.services.base_service import BaseService
-from app.utils.preprocess import crop_faces
+from app.utils.preprocess import crop_faces, crop_faces_v2
 
 
 # det_10g.onnx is InsightFace's SCRFD-10G model.
@@ -21,7 +21,7 @@ class FaceDetectionService(BaseService):
         triton_url: str | None = None,
         weights_dir: str | Path | None = None,
         model_path: str | Path | None = None,
-        confidence_threshold: float = 0.5,
+        confidence_threshold: float = 0.35,
         nms_threshold: float = 0.4,
         top_expand_ratio: float = 0.4,
         bottom_expand_ratio: float = 0.0,
@@ -330,6 +330,7 @@ class FaceDetectionService(BaseService):
             "bbox":       (x, y, w, h),      # normalized [0, 1] — x,y = top-left
             "confidence": float,              # detection score 0.0 – 1.0
             "crop":       PIL.Image.Image,    # face region cropped from original
+            "verification_crop": PIL.Image.Image,  # aligned crop for face recognition
             "keypoints":  [                   # 5 facial landmarks, normalized [0, 1]
                 (x, y),  # 0 — left eye
                 (x, y),  # 1 — right eye
@@ -359,6 +360,7 @@ class FaceDetectionService(BaseService):
 
         results: list[dict] = []
         bboxes_normalized: list[tuple] = []
+        keypoints_normalized_all: list[list[tuple[float, float]]] = []
 
         for det in detections:
             x1, y1, x2, y2 = det["bbox_pixels"]
@@ -407,28 +409,30 @@ class FaceDetectionService(BaseService):
 
             bboxes_normalized.append((x_norm, y_norm, w_norm, h_norm))
 
+            raw_kps = det["keypoints_pixels"]
+            keypoints_normalized = [
+                (
+                    float(np.clip(kx / self.INPUT_SIZE[0], 0.0, 1.0)),
+                    float(np.clip(ky / self.INPUT_SIZE[1], 0.0, 1.0)),
+                )
+                for kx, ky in raw_kps
+            ]
+            keypoints_normalized_all.append(keypoints_normalized)
+
         # Use the shared crop_faces utility — MUST use this, not custom cropping,
         # so that every downstream service (liveness, emotion, verification)
         # gets crops from exactly the same coordinate math.
         crops = crop_faces(image, bboxes_normalized)
+        verification_crops = crop_faces_v2(image, keypoints_normalized_all)
 
-        for bbox, det, crop in zip(bboxes_normalized, detections, crops):
-            # Scale keypoints from 640x640 space back to original image,
-            # then normalize to [0, 1] by dividing by original dimensions.
-            # Follows the same scale-then-normalize logic as bboxes above.
-            raw_kps = det["keypoints_pixels"]
-            keypoints_normalized = [
-                (
-                    float(np.clip(kx / self.INPUT_SIZE[0] * img_w / img_w, 0.0, 1.0)),
-                    float(np.clip(ky / self.INPUT_SIZE[1] * img_h / img_h, 0.0, 1.0)),
-                )
-                for kx, ky in raw_kps
-            ]
-
+        for bbox, keypoints_normalized, det, crop, verification_crop in zip(
+            bboxes_normalized, keypoints_normalized_all, detections, crops, verification_crops
+        ):
             results.append({
                 "bbox":       bbox,
                 "confidence": det["confidence"],
                 "crop":       crop,
+                "verification_crop": verification_crop,
                 "keypoints":  keypoints_normalized,
             })
 

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, File, HTTPException, UploadFile
 
-from app.schemas.common_schema import DetectedFace, NormalizedBox
+from app.schemas.common_schema import DetectedFace, NormalizedBox, NormalizedPoint
 from app.schemas.detection_schema import DetectionResponse
 from app.services.face_detection_service import FaceDetectionService
 from app.utils.preprocess import load_image_from_bytes
@@ -31,6 +31,7 @@ async def detect_faces(file: UploadFile = File(...)) -> DetectionResponse:
         bbox = detection["bbox"]
         crop = detection["crop"]
         crop_width, crop_height = crop.size
+        keypoints = detection.get("keypoints", [])
 
         faces.append(
             DetectedFace(
@@ -38,6 +39,10 @@ async def detect_faces(file: UploadFile = File(...)) -> DetectionResponse:
                 detection_confidence=detection["confidence"],
                 crop_width=crop_width,
                 crop_height=crop_height,
+                keypoints=[
+                    NormalizedPoint(x=point[0], y=point[1])
+                    for point in keypoints
+                ],
             )
         )
 

@@ -4,7 +4,10 @@ python-multipart
 pillow
 pydantic
 numpy
+opencv-python-headless
 pyyaml
+qdrant-client
+scikit-image
 tritonclient[http]
 onnxruntime-gpu
 requests

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, File, HTTPException, UploadFile
 
 from app.schemas.anti_spoofing_schema import AntiSpoofingResult
-from app.schemas.common_schema import DetectedFace, NormalizedBox
+from app.schemas.common_schema import DetectedFace, NormalizedBox, NormalizedPoint
 from app.schemas.emotion_schema import EmotionResult
 from app.schemas.pipeline_schema import FaceAnalysis, FrameAnalysisResponse
 from app.schemas.verification_schema import RecognitionResult
@@ -36,6 +36,10 @@ async def analyze_frame(file: UploadFile = File(...)) -> FrameAnalysisResponse:
                 detection_confidence=fr.detection_score,
                 crop_width=fr.crop_width,
                 crop_height=fr.crop_height,
+                keypoints=[
+                    NormalizedPoint(x=point[0], y=point[1])
+                    for point in fr.keypoints
+                ],
             ),
             emotion=EmotionResult(label=fr.emotion, confidence=fr.emotion_score),
             anti_spoofing=AntiSpoofingResult(
@@ -54,4 +58,3 @@ async def analyze_frame(file: UploadFile = File(...)) -> FrameAnalysisResponse:
     response = FrameAnalysisResponse(image_width=width, image_height=height, faces=face_results)
     save_capture(contents, response.model_dump())
     return response
-

@@ -12,3 +12,12 @@ models:
 captures:
   enabled: true
   dir: captures/screenshots
+  dir: captures
+
+qdrant:
+  url: http://localhost:6333
+  api_key: ""
+  collection: face_embeddings
+  vector_size: 512
+  top_k: 5
+  max_registration_images: 5

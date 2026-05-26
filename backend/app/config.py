@@ -97,6 +97,36 @@ class Settings:
 			_get(_config, "captures", "dir", default=DEFAULT_CAPTURES_DIR),
 		)
 	)
+	qdrant_url: str = os.getenv(
+		"QDRANT_URL",
+		str(_get(_config, "qdrant", "url", default="http://localhost:6333")),
+	)
+	qdrant_api_key: str = os.getenv(
+		"QDRANT_API_KEY",
+		str(_get(_config, "qdrant", "api_key", default="")),
+	)
+	qdrant_collection: str = os.getenv(
+		"QDRANT_COLLECTION",
+		str(_get(_config, "qdrant", "collection", default="face_embeddings")),
+	)
+	qdrant_vector_size: int = int(
+		os.getenv(
+			"QDRANT_VECTOR_SIZE",
+			str(_get(_config, "qdrant", "vector_size", default=512)),
+		)
+	)
+	qdrant_top_k: int = int(
+		os.getenv(
+			"QDRANT_TOP_K",
+			str(_get(_config, "qdrant", "top_k", default=5)),
+		)
+	)
+	qdrant_max_registration_images: int = int(
+		os.getenv(
+			"QDRANT_MAX_REGISTRATION_IMAGES",
+			str(_get(_config, "qdrant", "max_registration_images", default=5)),
+		)
+	)
 
 
 settings = Settings()

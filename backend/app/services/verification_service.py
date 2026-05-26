@@ -5,7 +5,9 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
+from app.config import settings
 from app.services.base_service import BaseService
+from app.services.vector_store_service import VectorStoreService
 
 
 class VerificationService(BaseService):
@@ -15,34 +17,42 @@ class VerificationService(BaseService):
 		triton_url: str | None = None,
 		weights_dir: str | Path | None = None,
 		model_path: str | Path | None = None,
-		match_threshold: float = 0.6,
+		match_threshold: float = 0.3,
+		vector_store: VectorStoreService | None = None,
 	) -> None:
 		super().__init__(
-			"arcface",
+			"resnet18_face",
 			use_triton=use_triton,
 			triton_url=triton_url,
 			weights_dir=weights_dir,
 			model_path=model_path,
 		)
 		self.match_threshold = match_threshold
-		self._registered_embeddings: dict[str, np.ndarray] = {}
-		self.INPUT_SIZE = (112, 112)
+		self.vector_store = vector_store or VectorStoreService()
+		self.max_registration_images = settings.qdrant_max_registration_images
+		self.INPUT_SIZE = (128, 128)
 		self.CHUNK_SIZE = 32
 
 	def preprocess(self, image: np.ndarray | list[np.ndarray]) -> dict[str, np.ndarray]:
 		images = image if isinstance(image, list) else [image]
 		input_tensors = []
 		for image_item in images:
-			resized = Image.fromarray(image_item).resize(self.INPUT_SIZE, Image.BILINEAR)
-			input_tensor = np.asarray(resized, dtype=np.float32)
-			input_tensor = (input_tensor - 127.5) / 128.0
+			gray_image = Image.fromarray(image_item).convert("L")
+			if gray_image.size != self.INPUT_SIZE:
+				raise ValueError(
+					f"Verification crop must be {self.INPUT_SIZE}, got {gray_image.size}. "
+					"Resize/alignment should happen before VerificationService.preprocess()."
+				)
+			input_tensor = np.asarray(gray_image, dtype=np.float32) / 255.0
+			input_tensor = (input_tensor - 0.5) / 0.5
+			input_tensor = input_tensor[np.newaxis, ...]
 			input_tensors.append(input_tensor)
 
 		input_name = self._input_metadata[0]["name"] if self._input_metadata else "input_1"
 		return {input_name: np.stack(input_tensors, axis=0).astype(np.float32)}
 
 	def postprocess(self, outputs: dict[str, np.ndarray]) -> np.ndarray:
-		return self._normalize_outputs(outputs)[0]
+		return self._read_outputs(outputs)[0]
 
 	def verify(self, face_images: Image.Image | list[Image.Image]) -> list[dict]:
 		"""
@@ -50,7 +60,7 @@ class VerificationService(BaseService):
 		  {
 		    "employee_id":   str | None,  # DB employee ID; None if unrecognised
 		    "employee_name": str,         # display name; "unknown" if unrecognised
-		    "confidence":    float,       # cosine similarity score 0.0 – 1.0
+		    "confidence":    float,       # cosine similarity score 0.0 - 1.0
 		    "matched":       bool         # True if confidence >= verification threshold
 		  }
 		Returns a list even for a single image input.
@@ -60,22 +70,29 @@ class VerificationService(BaseService):
 
 		results: list[dict] = []
 		for embedding in self._extract_embeddings(face_images):
-			best_person_id, best_score = self._find_best_match(embedding)
-			matched = best_person_id is not None and best_score >= self.match_threshold
-			employee_name = best_person_id if matched else "unknown"
+			match = self.vector_store.pick_majority_match(embedding)
+			matched = match is not None and match.score >= self.match_threshold
+			employee_id = match.employee_id if matched and match is not None else None
+			employee_name = match.employee_name if matched and match is not None else "unknown"
+			score = match.score if match is not None else 0.0
 
 			results.append(
 				{
-					"employee_id": best_person_id if matched else None,
+					"employee_id": employee_id,
 					"employee_name": employee_name,
 					"label": employee_name,
-					"confidence": float(best_score),
+					"confidence": float(score),
 					"matched": matched,
 				}
 			)
 		return results
 
-	def register(self, face_image: Image.Image, person_id: str) -> dict:
+	def register(
+		self,
+		face_images: Image.Image | list[Image.Image],
+		person_id: str,
+		person_name: str | None = None,
+	) -> dict:
 		"""
 		Output:
 		  {
@@ -83,9 +100,27 @@ class VerificationService(BaseService):
 		    "status":    "registered" | "updated"
 		  }
 		"""
-		status = "updated" if person_id in self._registered_embeddings else "registered"
-		self._registered_embeddings[person_id] = self._extract_embeddings([face_image])[0]
-		return {"person_id": person_id, "status": status}
+		if isinstance(face_images, Image.Image):
+			face_images = [face_images]
+		if not face_images:
+			raise ValueError("At least one registration image is required.")
+		if len(face_images) > self.max_registration_images:
+			raise ValueError(
+				f"At most {self.max_registration_images} registration images are allowed."
+			)
+
+		status = "updated" if self.vector_store.employee_exists(person_id) else "registered"
+		embeddings = self._extract_embeddings(face_images)
+		self.vector_store.register_embeddings(
+			employee_id=person_id,
+			employee_name=person_name or person_id,
+			embeddings=embeddings,
+		)
+		return {
+			"person_id": person_id,
+			"status": status,
+			"image_count": len(embeddings),
+		}
 
 	def _extract_embeddings(self, face_images: list[Image.Image]) -> list[np.ndarray]:
 		if not face_images:
@@ -93,7 +128,6 @@ class VerificationService(BaseService):
 
 		self._ensure_loaded()
 		embeddings: list[np.ndarray] = []
-		input_name = self._input_metadata[0]["name"]
 
 		for start in range(0, len(face_images), self.CHUNK_SIZE):
 			chunk = face_images[start:start + self.CHUNK_SIZE]
@@ -102,32 +136,18 @@ class VerificationService(BaseService):
 				for face_image in chunk
 			]
 			raw_outputs = self._infer(self.preprocess(images))
-			embeddings.extend(self._normalize_outputs(raw_outputs))
+			embeddings.extend(self._read_outputs(raw_outputs))
 
 		return embeddings
 
-	def _normalize_outputs(self, outputs: dict[str, np.ndarray]) -> list[np.ndarray]:
+	def _read_outputs(self, outputs: dict[str, np.ndarray]) -> list[np.ndarray]:
 		embeddings = next(iter(outputs.values())).astype(np.float32)
 		if embeddings.ndim == 1:
 			embeddings = embeddings[np.newaxis, :]
 
 		norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
 		if np.any(norms == 0):
-			raise ValueError("ArcFace model returned a zero-norm embedding.")
+			raise ValueError("Verification model returned a zero-norm embedding.")
 
 		normalized = embeddings / norms
 		return [embedding for embedding in normalized]
-
-	def _find_best_match(self, embedding: np.ndarray) -> tuple[str | None, float]:
-		if not self._registered_embeddings:
-			return None, 0.0
-
-		best_person_id: str | None = None
-		best_score = -1.0
-		for person_id, known_embedding in self._registered_embeddings.items():
-			score = float(np.dot(embedding, known_embedding))
-			if score > best_score:
-				best_person_id = person_id
-				best_score = score
-
-		return best_person_id, max(best_score, 0.0)
