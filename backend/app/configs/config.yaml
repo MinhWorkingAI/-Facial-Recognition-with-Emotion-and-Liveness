@@ -4,7 +4,7 @@ inference:
 triton:
   url: localhost:8000
   model_version: ""
-  request_timeout: 10.0
+  request_timeout: 5
 
 models:
   weights_dir: weights

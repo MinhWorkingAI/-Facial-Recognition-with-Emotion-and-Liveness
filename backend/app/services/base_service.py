@@ -43,7 +43,7 @@ class BaseService(ABC):
         Triton HTTP endpoint, e.g. ``"localhost:8000"``.
     model_version : str
         Model version string.  ``""`` means "latest".
-    request_timeout : float
+    request_timeout : int
         Per-request timeout in seconds for Triton HTTP calls.
     weights_dir : str | Path | None
         Root folder for local ONNX weights. Defaults to ``backend/weights``.
@@ -60,7 +60,7 @@ class BaseService(ABC):
         use_triton: bool | None = None,
         triton_url: str | None = None,
         model_version: str | None = None,
-        request_timeout: float | None = None,
+        request_timeout: int | None = None,
         weights_dir: str | Path | None = None,
         model_path: str | Path | None = None,
         providers: list[str] | None = None,
@@ -69,7 +69,7 @@ class BaseService(ABC):
         self.triton_url = triton_url or settings.triton_url
         self.model_name = model_name
         self.model_version = settings.model_version if model_version is None else model_version
-        self.request_timeout = (
+        self.request_timeout = int(
             settings.request_timeout if request_timeout is None else request_timeout
         )
         self.weights_dir = Path(weights_dir or settings.weights_dir).expanduser()

@@ -4,7 +4,6 @@ import logging
 from pathlib import Path
 
 from PIL import Image
-from polars import datetime
 
 from app.services.face_detection_service import FaceDetectionService
 from app.services.anti_spoofing_service import AntiSpoofingService

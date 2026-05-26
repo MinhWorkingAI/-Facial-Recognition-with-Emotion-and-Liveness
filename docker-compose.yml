@@ -1,4 +1,51 @@
 services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: facial-recognition-frontend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: facial-recognition-backend
+    ports:
+      - "8000:8000"
+    environment:
+      QDRANT_URL: http://qdrant:6333
+      BACKEND_WEIGHTS_DIR: /app/weights
+      BACKEND_CAPTURES_DIR: /app/captures
+      BACKEND_USE_TRITON: "true"
+      TRITON_URL: triton:8000
+    volumes:
+      - ./backend/app/configs:/app/app/configs:ro
+      - ./backend/weights:/app/weights:ro
+      - ./backend/captures:/app/captures
+    depends_on:
+      - qdrant
+      - triton
+    restart: unless-stopped
+
+  triton:
+    image: nvcr.io/nvidia/tritonserver:26.04-py3
+    container_name: facial-recognition-triton
+    command: ["/bin/bash", "/model-repository/start-triton.sh"]
+    ports:
+      - "8001:8000"
+      - "8002:8001"
+      - "8003:8002"
+    volumes:
+      - ./triton_models:/model-repository:ro
+      - ./backend/weights:/weights:ro
+    shm_size: 1g
+    restart: unless-stopped
+
   qdrant:
     image: qdrant/qdrant:latest
     container_name: facial-recognition-qdrant

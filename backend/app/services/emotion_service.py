@@ -36,6 +36,7 @@ class EmotionService(BaseService):
 			"sad",
 			"surprise",
 		]
+		self.CHUNK_SIZE = 32
 
 	def preprocess(self, image: np.ndarray | list[np.ndarray]) -> dict[str, np.ndarray]:
 		images = image if isinstance(image, list) else [image]
@@ -84,9 +85,15 @@ class EmotionService(BaseService):
 			face_images = [face_images]
 
 		self._ensure_loaded()
-		images = [
-			np.asarray(face_image.convert("RGB"), dtype=np.uint8)
-			for face_image in face_images
-		]
-		raw_outputs = self._infer(self.preprocess(images))
-		return self.postprocess(raw_outputs)
+		results: list[dict] = []
+
+		for start in range(0, len(face_images), self.CHUNK_SIZE):
+			chunk = face_images[start:start + self.CHUNK_SIZE]
+			images = [
+				np.asarray(face_image.convert("RGB"), dtype=np.uint8)
+				for face_image in chunk
+			]
+			raw_outputs = self._infer(self.preprocess(images))
+			results.extend(self.postprocess(raw_outputs))
+
+		return results

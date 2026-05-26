@@ -11,3 +11,12 @@ scikit-image
 tritonclient[http]
 onnxruntime-gpu
 requests
+
+# testing
+pytest
+pytest-timeout
+pytest-order
+ 
+# lint and format
+ruff
+black

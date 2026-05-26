@@ -75,10 +75,12 @@ class Settings:
 		"TRITON_MODEL_VERSION",
 		str(_get(_config, "triton", "model_version", default="")),
 	)
-	request_timeout: float = float(
-		os.getenv(
-			"TRITON_REQUEST_TIMEOUT",
-			str(_get(_config, "triton", "request_timeout", default=10.0)),
+	request_timeout: int = int(
+		float(
+			os.getenv(
+				"TRITON_REQUEST_TIMEOUT",
+				str(_get(_config, "triton", "request_timeout", default=10)),
+			)
 		)
 	)
 	weights_dir: Path = _resolve_backend_path(
