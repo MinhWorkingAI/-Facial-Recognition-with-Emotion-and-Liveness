@@ -1,5 +1,8 @@
 """
-File to train the anti-spoofing MobileNetV2 model.
+Train the anti-spoofing MobileNetV2 model and save Keras + ONNX weights under model/.
+
+Run from this folder (or anywhere — paths below are relative to this file):
+  python anti_spoofing.py
 """
 
 import json
@@ -8,8 +11,10 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import onnx
 import pandas as pd
 import tensorflow as tf
+import tf2onnx
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
 
 
@@ -17,17 +22,15 @@ from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classifica
 #General configuration
 #============================================================
 
-#Path.cwd() if running from inside - otherwise change directory to where raw data is stored
-#Expected structure:
-#LCC_FASD/
-#  LCC_FASD_training/
-#  LCC_FASD_development/
-#  LCC_FASD_evaluation/
+MODULE_DIR = Path.cwd()
 
-RAW_DATA_DIR = Path("LCC_FASD")
+# Expected dataset layout (under MODULE_DIR or repo root if you symlink/copy LCC_FASD):
+# LCC_FASD/LCC_FASD_training/, LCC_FASD_development/, LCC_FASD_evaluation/
+RAW_DATA_DIR = MODULE_DIR / "LCC_FASD"
 
-MODEL_DIR = Path("model")
+MODEL_DIR = MODULE_DIR / "model"
 MODEL_DIR.mkdir(parents=True, exist_ok=True)
+MODEL_STEM = "anti_spoofing"
 
 TRAIN_FOLDER = "LCC_FASD_training"
 VAL_FOLDER = "LCC_FASD_development"
@@ -43,9 +46,18 @@ FINE_TUNE_EPOCHS = 15
 FINE_TUNE_AT = 54
 
 BASE_LR = 5e-5
-FINE_TUNE_LR = 5e-6
-SAVE_H5 = True
+FINE_TUNE_LR = 5e-5
+SAVE_ONNX = True
+ONNX_OPSET = 13
 
+SEED = 77
+
+tf.keras.utils.set_random_seed(SEED)
+
+try:
+    tf.config.experimental.enable_op_determinism()
+except Exception:
+    pass
 
 #============================================================
 #Data loading helpers
@@ -88,6 +100,7 @@ def load_datasets(train_dir: Path, val_dir: Path, test_dir: Path):
         image_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
         shuffle=True,
+        seed=SEED,
     )
 
     val_ds = tf.keras.utils.image_dataset_from_directory(
@@ -95,6 +108,7 @@ def load_datasets(train_dir: Path, val_dir: Path, test_dir: Path):
         image_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
         shuffle=False,
+        seed=SEED,
     )
 
     test_ds = tf.keras.utils.image_dataset_from_directory(
@@ -102,6 +116,7 @@ def load_datasets(train_dir: Path, val_dir: Path, test_dir: Path):
         image_size=IMG_SIZE,
         batch_size=BATCH_SIZE,
         shuffle=False,
+        seed=SEED,
     )
 
     return train_ds, val_ds, test_ds
@@ -188,11 +203,10 @@ def build_data_augmentation() -> tf.keras.Sequential:
     """Create data augmentation pipeline."""
     return tf.keras.Sequential(
         [
-            tf.keras.layers.RandomFlip("horizontal"),
-            tf.keras.layers.RandomRotation(0.10),
-            tf.keras.layers.RandomZoom(0.10),
-            tf.keras.layers.RandomTranslation(0.05, 0.05),
-            #tf.keras.layers.RandomContrast(0.1),
+            tf.keras.layers.RandomFlip("horizontal", seed=SEED),
+            tf.keras.layers.RandomRotation(0.10, seed=SEED),
+            tf.keras.layers.RandomZoom(0.10, seed=SEED),
+            tf.keras.layers.RandomTranslation(0.05, 0.05, seed=SEED),
         ],
         name="data_augmentation",
     )
@@ -228,9 +242,9 @@ def build_model(num_classes: int) -> tuple[tf.keras.Model, tf.keras.Model]:
         name="anti_spoof_conv",
     )(x)
 
-    x = global_average_layer(x)
     x = tf.keras.layers.Dropout(0.2)(x)
-    outputs = tf.keras.layers.Dense(num_classes, activation="softmax", name="classifier")(x)
+    x = global_average_layer(x)
+    outputs = tf.keras.layers.Dense(num_classes, activation="softmax")(x)
 
     model = tf.keras.Model(inputs, outputs, name="fasd_mobilenetv2")
 
@@ -252,7 +266,6 @@ def create_callbacks() -> list[tf.keras.callbacks.Callback]:
         monitor="val_loss",
         factor=0.2,
         patience=2,
-        min_lr=1e-8,
         verbose=1,
     )
 
@@ -322,6 +335,7 @@ def evaluate_and_save_outputs(model, train_ds, val_ds, test_ds) -> None:
 
     y_true = np.concatenate([labels.numpy() for _, labels in test_ds])
     y_pred_probs = model.predict(test_ds)
+    # Softmax outputs shape (n_samples, 2) — take the class index, don't .ravel().
     y_pred = np.argmax(y_pred_probs, axis=1)
 
     class_names = train_ds.class_names
@@ -363,17 +377,41 @@ def evaluate_and_save_outputs(model, train_ds, val_ds, test_ds) -> None:
     print(f"Saved metrics: {metrics_path}")
 
 
-def save_final_models(model) -> None:
-    """Save final model outputs."""
-    keras_model_path = MODEL_DIR / "fasd_mobilenetv2_model.keras"
-    h5_model_path = MODEL_DIR / "fasd_mobilenetv2_model.h5"
+def save_onnx(model: tf.keras.Model) -> Path:
+    """
+    Export the trained Keras model to ONNX for backend inference.
+
+    Input shape: (N, 224, 224, 3) float32 RGB in [0, 255] — same as training.
+    """
+    onnx_path = MODEL_DIR / f"{MODEL_STEM}.onnx"
+    input_signature = (
+        tf.TensorSpec([None, IMAGE_SIZE, IMAGE_SIZE, 3], tf.float32, name="input"),
+    )
+
+    @tf.function(input_signature=input_signature)
+    def serving_fn(x: tf.Tensor) -> tf.Tensor:
+        return model(x, training=False)
+
+    print(f"Converting to ONNX (opset {ONNX_OPSET})...")
+    model_proto, _ = tf2onnx.convert.from_function(
+        serving_fn,
+        input_signature=input_signature,
+        opset=ONNX_OPSET,
+    )
+    onnx.save(model_proto, str(onnx_path))
+    print(f"Saved ONNX model: {onnx_path}")
+    return onnx_path
+
+
+def save_final_models(model: tf.keras.Model) -> None:
+    """Save Keras weights, and ONNX under model/."""
+    keras_model_path = MODEL_DIR / f"{MODEL_STEM}.keras"
 
     model.save(keras_model_path)
     print(f"Saved Keras model: {keras_model_path}")
 
-    if SAVE_H5:
-        model.save(h5_model_path)
-        print(f"Saved H5 model: {h5_model_path}")
+    if SAVE_ONNX:
+        save_onnx(model)
 
     best_model_path = MODEL_DIR / "best_fasd_mobilenetv2_model.keras"
 

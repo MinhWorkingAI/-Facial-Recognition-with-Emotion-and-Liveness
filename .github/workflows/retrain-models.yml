@@ -44,7 +44,6 @@ jobs:
           source "$(conda info --base)/etc/profile.d/conda.sh"
           conda activate "$SPOOF_CONDA_ENV"
           python anti_spoofing.py
-          python export_onnx.py model/fasd_mobilenetv2_model.h5 model/fasd_mobilenetv2_model.onnx
 
       - name: Publish anti-spoofing weights
         shell: bash
