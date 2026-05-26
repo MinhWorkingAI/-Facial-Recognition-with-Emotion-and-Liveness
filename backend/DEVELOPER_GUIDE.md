@@ -12,7 +12,7 @@ backend/
     services/             # Model and pipeline services
     utils/                # Shared image helpers
     config.py             # Runtime settings
-  config.yaml             # Default backend runtime config
+    configs/config.yaml   # Default backend runtime config
   weights/                # Local ONNX model files
   requirements.txt
   test_frame.py
@@ -25,7 +25,7 @@ All model services inherit from `BaseService`.
 Runtime settings are loaded from:
 
 ```text
-backend/config.yaml
+backend/app/configs/config.yaml
 ```
 
 You can point to another config file with:
@@ -35,6 +35,61 @@ BACKEND_CONFIG_PATH=/path/to/config.yaml uvicorn app.main:app --reload
 ```
 
 Environment variables still override YAML values.
+
+## Qdrant Face Database
+
+Face recognition embeddings are stored in Qdrant.
+
+Start Qdrant:
+
+```bash
+docker compose up -d qdrant
+```
+
+Qdrant HTTP runs at:
+
+```text
+http://localhost:6333
+```
+
+Default config:
+
+```yaml
+qdrant:
+  url: http://localhost:6333
+  collection: face_embeddings
+  vector_size: 512
+  top_k: 5
+  max_registration_images: 5
+```
+
+Collection settings:
+
+```text
+collection: face_embeddings
+vector size: 512
+distance: cosine
+```
+
+Registration replaces all previous vectors for the same employee ID and stores up to 5 face embeddings. Verification queries the top 5 closest vectors, chooses the employee ID that appears most often, and uses the highest score from that winning ID as confidence.
+
+Register up to 5 images using repeated `file` fields:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/verification/register \
+  -F "person_id=employee_001" \
+  -F "person_name=Employee One" \
+  -F "file=@/path/to/face1.jpg" \
+  -F "file=@/path/to/face2.jpg" \
+  -F "file=@/path/to/face3.jpg"
+```
+
+Verify:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/verification/verify \
+  -F "file=@/path/to/face.jpg"
+```
 
 Local ONNX Runtime mode loads models from:
 
@@ -49,7 +104,7 @@ backend/weights/
   face_detection.onnx
   anti_spoofing.onnx
   emotion.onnx
-  arcface.onnx
+  resnet18_face.onnx
 ```
 
 Run local ONNX mode:
@@ -97,6 +152,13 @@ Required output format:
         "bbox": (x, y, w, h),
         "confidence": 0.95,
         "crop": face_crop_image,
+        "keypoints": [
+            (0.36, 0.31),
+            (0.44, 0.31),
+            (0.40, 0.38),
+            (0.37, 0.46),
+            (0.43, 0.46),
+        ],
     }
 ]
 ```
@@ -105,6 +167,7 @@ Rules:
 
 - `bbox` must be normalized floats in `[0, 1]`.
 - `bbox` format is `(x, y, w, h)`, not `(x1, y1, x2, y2)`.
+- `keypoints` must contain 5 normalized `(x, y)` points in this order: left eye, right eye, nose tip, left mouth corner, right mouth corner.
 - `crop` must be a `PIL.Image.Image`.
 - Return an empty list when no faces are found.
 
@@ -119,7 +182,14 @@ API response shape:
       "bbox": {"x": 0.3, "y": 0.2, "w": 0.2, "h": 0.3},
       "detection_confidence": 0.95,
       "crop_width": 224,
-      "crop_height": 224
+      "crop_height": 224,
+      "keypoints": [
+        {"x": 0.36, "y": 0.31},
+        {"x": 0.44, "y": 0.31},
+        {"x": 0.40, "y": 0.38},
+        {"x": 0.37, "y": 0.46},
+        {"x": 0.43, "y": 0.46}
+      ]
     }
   ]
 }
@@ -222,13 +292,13 @@ app/services/verification_service.py
 Current local model:
 
 ```text
-backend/weights/arcface.onnx
+backend/weights/resnet18_face.onnx
 ```
 
 Public methods:
 
 ```python
-register(face_image: PIL.Image.Image, person_id: str) -> dict
+register(face_images: PIL.Image.Image | list[PIL.Image.Image], person_id: str) -> dict
 verify(face_images: PIL.Image.Image | list[PIL.Image.Image]) -> list[dict]
 ```
 
@@ -238,6 +308,7 @@ verify(face_images: PIL.Image.Image | list[PIL.Image.Image]) -> list[dict]
 {
     "person_id": "employee_001",
     "status": "registered",
+    "image_count": 5,
 }
 ```
 
@@ -265,7 +336,10 @@ updated
 Rules:
 
 - Always return a list, even if the input is one image.
-- Verification supports batched ArcFace inference and processes face crops in chunks of 32.
+- Verification supports batched ResNet18 inference and processes face crops in chunks of 32.
+- Registration stores 1 to 5 embeddings per employee in Qdrant.
+- Model outputs are stored raw; this backend does not L2-normalize them before Qdrant.
+- Verification searches the top 5 Qdrant matches, picks the employee ID that appears most often, and reports the highest score for that winning ID.
 - Output order must match input face order.
 - `confidence` is cosine similarity.
 - `matched` must be `True` only when similarity is above the match threshold.
@@ -299,7 +373,7 @@ API register response shape:
 {
   "person_id": "employee_001",
   "status": "registered",
-  "message": "Face embedding stored in memory."
+  "message": "Stored 5 face embedding(s) in Qdrant."
 }
 ```
 
@@ -327,6 +401,7 @@ Pipeline internal face result:
 FaceResult(
     bbox=(x, y, w, h),
     detection_score=0.95,
+    keypoints=[(x, y), (x, y), (x, y), (x, y), (x, y)],
     is_live=True,
     liveness_score=0.92,
     emotion="happy",
@@ -350,7 +425,14 @@ Pipeline API response shape:
         "bbox": {"x": 0.3, "y": 0.2, "w": 0.2, "h": 0.3},
         "detection_confidence": 0.95,
         "crop_width": 0,
-        "crop_height": 0
+        "crop_height": 0,
+        "keypoints": [
+          {"x": 0.36, "y": 0.31},
+          {"x": 0.44, "y": 0.31},
+          {"x": 0.40, "y": 0.38},
+          {"x": 0.37, "y": 0.46},
+          {"x": 0.43, "y": 0.46}
+        ]
       },
       "emotion": {
         "label": "happy",
