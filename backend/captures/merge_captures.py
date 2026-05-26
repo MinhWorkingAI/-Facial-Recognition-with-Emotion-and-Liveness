@@ -6,7 +6,8 @@ Each capture from the API is a pair of files in SCREENSHOTS_DIR:
   <timestamp>_predictions.json   — pipeline output (faces, emotion, liveness, etc.)
 
 This script crops each face, copies it into Train or Test folders under the right
-dataset (AffectNet, LCC_FASD, …), then deletes the pair from screenshots.
+dataset (AffectNet, LCC_FASD, …), then deletes every screenshot pair (merged or not)
+and any orphan *_frame.jpg / *_predictions.json files left behind.
 
 Edit SETTINGS below, then run:
   python backend/captures/merge_captures.py
@@ -26,7 +27,7 @@ CAPTURES_PKG = Path(__file__).resolve().parent
 REPO_ROOT = CAPTURES_PKG.parents[1]
 
 # ---------------------------------------------------------------------------
-# SETTINGS — change these values here (paths are relative to repo root)
+# SETTINGS — Changes based on base repo and where the training files are stored
 # ---------------------------------------------------------------------------
 
 SCREENSHOTS_DIR = "backend/captures/screenshots"
@@ -47,13 +48,13 @@ TARGETS = [
         "name": "anti_spoofing",
         "train_dir": "LCC_FASD/LCC_FASD_training",
         "test_dir": "LCC_FASD/LCC_FASD_evaluation",
-        "label_from": "liveness",  # uses faces[].anti_spoofing.label (real / spoof)
+        "label_from": "liveness",
     },
     {
         "name": "emotion_affectnet",
         "train_dir": "AffectNet/Train",
         "test_dir": "AffectNet/Test",
-        "label_from": "emotion",  # uses faces[].emotion.label (happy, sad, …)
+        "label_from": "emotion", 
     },
 ]
 
@@ -111,8 +112,29 @@ def label_for_dataset(face: dict, target: dict) -> tuple[str, float] | None:
 
 
 def is_train_split() -> bool:
-    """Randomly pick train vs test; True ≈ TRAIN_SPLIT_RATIO of the time."""
+    """Randomly pick train vs test; True approximately TRAIN_SPLIT_RATIO of the time."""
     return random.random() < TRAIN_SPLIT_RATIO
+
+
+def delete_pair(screenshots_dir: Path, stamp: str) -> None:
+    (screenshots_dir / f"{stamp}_frame.jpg").unlink(missing_ok=True)
+    (screenshots_dir / f"{stamp}_predictions.json").unlink(missing_ok=True)
+
+
+def cleanup_leftovers(screenshots_dir: Path) -> int:
+    """Remove orphan halves and any capture files still in screenshots."""
+    removed = 0
+    for json_path in list(screenshots_dir.glob("*_predictions.json")):
+        stamp = json_path.stem.removesuffix("_predictions")
+        if not (screenshots_dir / f"{stamp}_frame.jpg").is_file():
+            json_path.unlink(missing_ok=True)
+            removed += 1
+    for jpg_path in list(screenshots_dir.glob("*_frame.jpg")):
+        stamp = jpg_path.stem.removesuffix("_frame")
+        if not (screenshots_dir / f"{stamp}_predictions.json").is_file():
+            jpg_path.unlink(missing_ok=True)
+            removed += 1
+    return removed
 
 
 def main() -> int:
@@ -124,20 +146,21 @@ def main() -> int:
         print("No targets configured in TARGETS.", file=sys.stderr)
         return 1
 
-    total_crops = 0       # all .jpg crops written this run
-    merged_pairs = 0      # screenshot pairs deleted after a successful merge
+    total_crops = 0
+    merged_pairs = 0
 
-    # --- Loop each capture pair (one frame + one JSON) ---
     for json_path in sorted(screenshots_dir.glob("*_predictions.json")):
-        stamp = json_path.stem.removesuffix("_predictions")  # shared id in both filenames
+        stamp = json_path.stem.removesuffix("_predictions")
         jpg_path = screenshots_dir / f"{stamp}_frame.jpg"
         if not jpg_path.is_file():
-            continue  # skip orphan JSON with no image
+            json_path.unlink(missing_ok=True)
+            continue
 
         predictions = json.loads(json_path.read_text(encoding="utf-8"))
         faces = predictions.get("faces") or []
         if not faces:
-            continue  # nothing to crop
+            delete_pair(screenshots_dir, stamp)
+            continue
 
         frame = Image.open(jpg_path).convert("RGB")
         crops_saved_for_this_pair = 0  # resets per frame; used to decide deletion
@@ -164,7 +187,9 @@ def main() -> int:
                     continue  # model not confident in happy/real/etc.
 
                 # 70/30 (or TRAIN_SPLIT_RATIO) → train_dir vs test_dir
-                dataset_dir = target["train_dir"] if is_train_split() else target["test_dir"]
+                use_train = is_train_split()
+                dataset_dir = target["train_dir"] if use_train else target["test_dir"]
+                split = "train" if use_train else "test"
                 out_file = (
                     to_repo_path(dataset_dir)
                     / folder_name
@@ -172,16 +197,26 @@ def main() -> int:
                 )
                 out_file.parent.mkdir(parents=True, exist_ok=True)
                 crop.save(out_file, format="JPEG", quality=95)
+                print(
+                    f"{target['name']}:"
+                    f"{jpg_path.name} "
+                    f"face{face_index} "
+                    "to:"
+                    f"{split}/{folder_name} ({label_score:.2f})"
+                    f"{out_file}"
+                )
                 crops_saved_for_this_pair += 1
                 total_crops += 1
 
-        # Only remove screenshots if at least one crop was written; otherwise retry later
         if crops_saved_for_this_pair:
             merged_pairs += 1
-            jpg_path.unlink(missing_ok=True)
-            json_path.unlink(missing_ok=True)
+        delete_pair(screenshots_dir, stamp)
 
-    print(f"Done. {total_crops} crop(s) from {merged_pairs} screenshot pair(s).")
+    leftovers_removed = cleanup_leftovers(screenshots_dir)
+    print(
+        f"Done. {total_crops} crop(s) from {merged_pairs} pair(s). "
+        f"Removed {leftovers_removed} leftover file(s) from screenshots."
+    )
     return 0
 
 

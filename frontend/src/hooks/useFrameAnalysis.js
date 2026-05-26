@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { analyzeFrame } from '../services/api';
 
-const INTERVAL = parseInt(import.meta.env.VITE_FRAME_INTERVAL_MS, 10) || 5000; //Changing it to every 5 seconds. I think 2 was too fast
+const INTERVAL = parseInt(import.meta.env.VITE_FRAME_INTERVAL_MS, 10) || 2000; //2 Seconds
 
 /**
  * Polls the pipeline endpoint at a fixed interval, returning the latest
