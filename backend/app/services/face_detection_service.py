@@ -23,6 +23,10 @@ class FaceDetectionService(BaseService):
         model_path: str | Path | None = None,
         confidence_threshold: float = 0.5,
         nms_threshold: float = 0.4,
+        top_expand_ratio: float = 0.4,
+        bottom_expand_ratio: float = 0.0,
+        left_expand_ratio: float = 0.15,
+        right_expand_ratio: float = 0.0,
     ) -> None:
         super().__init__(
             "face_detection",
@@ -36,6 +40,12 @@ class FaceDetectionService(BaseService):
         # IoU threshold for NMS — how much two boxes can overlap before
         # one gets suppressed
         self.nms_threshold = nms_threshold
+        # Expand the bbox upward by this fraction of its height
+        self.top_expand_ratio = top_expand_ratio
+        # Expand the bbox by fractions of its size per side
+        self.bottom_expand_ratio = bottom_expand_ratio
+        self.left_expand_ratio = left_expand_ratio
+        self.right_expand_ratio = right_expand_ratio
 
         # SCRFD operates on a fixed 640x640 input
         self.INPUT_SIZE = (640, 640)
@@ -372,6 +382,28 @@ class FaceDetectionService(BaseService):
             y_norm = float(np.clip(y_norm, 0.0, 1.0))
             w_norm = float(np.clip(w_norm, 0.0, 1.0 - x_norm))
             h_norm = float(np.clip(h_norm, 0.0, 1.0 - y_norm))
+
+            if (
+                self.top_expand_ratio > 0
+                or self.bottom_expand_ratio > 0
+                or self.left_expand_ratio > 0
+                or self.right_expand_ratio > 0
+            ):
+                # Expand the box to include more context around the face
+                expand_top = h_norm * self.top_expand_ratio
+                expand_bottom = h_norm * self.bottom_expand_ratio
+                expand_left = w_norm * self.left_expand_ratio
+                expand_right = w_norm * self.right_expand_ratio
+
+                x_norm -= expand_left
+                y_norm -= expand_top
+                w_norm += expand_left + expand_right
+                h_norm += expand_top + expand_bottom
+
+                x_norm = float(np.clip(x_norm, 0.0, 1.0))
+                y_norm = float(np.clip(y_norm, 0.0, 1.0))
+                w_norm = float(np.clip(w_norm, 0.0, 1.0 - x_norm))
+                h_norm = float(np.clip(h_norm, 0.0, 1.0 - y_norm))
 
             bboxes_normalized.append((x_norm, y_norm, w_norm, h_norm))
 
