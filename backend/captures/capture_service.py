@@ -1,13 +1,11 @@
-from __future__ import annotations
-
 import json
-from datetime import datetime, timezone
+from datetime import datetime
+from typing import Any, Mapping
 
 from app.config import settings
-from app.schemas.pipeline_schema import FrameAnalysisResponse
 
 
-def save(image_bytes: bytes, response: FrameAnalysisResponse) -> None:
+def save(image_bytes: bytes, payload: Mapping[str, Any]) -> None:
     """Write frame JPEG + predictions JSON when captures are enabled."""
     if not settings.captures_enabled:
         return
@@ -15,9 +13,9 @@ def save(image_bytes: bytes, response: FrameAnalysisResponse) -> None:
     out_dir = settings.captures_dir
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S_%f")
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     (out_dir / f"{stamp}_frame.jpg").write_bytes(image_bytes)
     (out_dir / f"{stamp}_predictions.json").write_text(
-        json.dumps(response.model_dump(), indent=2),
+        json.dumps(dict(payload), indent=2),
         encoding="utf-8",
     )

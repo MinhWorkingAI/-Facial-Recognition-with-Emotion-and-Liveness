@@ -52,6 +52,6 @@ async def analyze_frame(file: UploadFile = File(...)) -> FrameAnalysisResponse:
     ]
 
     response = FrameAnalysisResponse(image_width=width, image_height=height, faces=face_results)
-    save_capture(contents, response)
+    save_capture(contents, response.model_dump())
     return response
 
