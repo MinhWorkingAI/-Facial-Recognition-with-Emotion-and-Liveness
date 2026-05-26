@@ -33,7 +33,7 @@ def export_onnx(model_path: str, onnx_path: str) -> None:
         dynamic_axes={"input": {0: "batch"}, "logits": {0: "batch"}},
         opset_version=17,
         export_params=True,
-        use_external_data_format=False,
+        external_data=False,
     )
 
 
