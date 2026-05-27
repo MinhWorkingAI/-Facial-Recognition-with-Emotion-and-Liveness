@@ -36,6 +36,16 @@ export function drawFaces(ctx, faces, imgW, imgH, mirrored = true) {
     offsetX = (canvas.width - imgW * scale) / 2;
   }
 
+  // Convert a normalized (or pixel) point to canvas coords, applying mirror
+  const project = (x, y, isNorm) => {
+    const px = isNorm ? x * imgW : x;
+    const py = isNorm ? y * imgH : y;
+    let cx = px * scale + offsetX;
+    const cy = py * scale + offsetY;
+    if (mirrored) cx = canvas.width - cx;
+    return { x: cx, y: cy };
+  };
+
   for (const face of faces) {
     const bbox = face.face?.bbox;
     if (!bbox) continue;
@@ -78,6 +88,19 @@ export function drawFaces(ctx, faces, imgW, imgH, mirrored = true) {
     c(bx + bw, by, -corner, 0, 0, corner);
     c(bx, by + bh, 0, -corner, corner, 0);
     c(bx + bw, by + bh, -corner, 0, 0, -corner);
+
+    // Landmark keypoints (eyes, nose, mouth corners — 5 points from SCRFD)
+    const keypoints = face.face?.keypoints || [];
+    if (keypoints.length > 0) {
+      ctx.fillStyle = color;
+      for (const kp of keypoints) {
+        const kpIsNorm = kp.x <= 1.0 && kp.y <= 1.0;
+        const { x, y } = project(kp.x, kp.y, kpIsNorm);
+        ctx.beginPath();
+        ctx.arc(x, y, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
 
     // Identity label above the box
     const name = face.recognition?.label;
