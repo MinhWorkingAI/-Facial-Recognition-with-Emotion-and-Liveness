@@ -277,17 +277,71 @@ ul, ol { list-style: none; }
 .section__title { font-family: var(--font-display); font-size: var(--t-h4); font-weight: 400; font-style: italic; color: var(--paper); }
 .section__aside { font-family: var(--font-mono); font-size: var(--t-tiny); letter-spacing: 0.12em; color: var(--paper-3); text-transform: uppercase; }
 
-.multi-face-note {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: var(--t-small);
-  color: var(--paper-2);
-  line-height: 1.45;
-  padding: 10px 12px;
-  background: var(--bg-3);
-  border-left: 2px solid var(--accent);
-  margin-bottom: 12px;
+.face-roster {
+  display: flex;
+  flex-direction: column;
 }
+.face-roster__item {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--edge-soft);
+}
+.face-roster__item:last-child { border-bottom: none; }
+
+.face-roster__head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+.face-roster__num {
+  font-family: var(--font-mono);
+  font-size: var(--t-tiny);
+  letter-spacing: 0.1em;
+  color: var(--paper-3);
+}
+.face-roster__name {
+  flex: 1;
+  font-family: var(--font-display);
+  font-size: var(--t-h4);
+  font-weight: 400;
+  line-height: 1.1;
+}
+.face-roster__name.matched { color: var(--accent); }
+.face-roster__name.unmatched {
+  color: var(--paper-3);
+  font-style: italic;
+}
+.face-roster__conf {
+  font-family: var(--font-mono);
+  font-size: var(--t-tiny);
+  color: var(--paper-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.face-roster__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-family: var(--font-mono);
+  font-size: var(--t-tiny);
+  letter-spacing: 0.06em;
+}
+.face-roster__stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--paper-2);
+}
+.face-roster__stat.go { color: var(--signal-go); }
+.face-roster__stat.stop { color: var(--signal-stop); }
+.face-roster__pct { color: var(--paper-3); }
+.face-roster__dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--paper-mute);
+}
+.face-roster__dot.go { background: var(--signal-go); }
+.face-roster__dot.stop { background: var(--signal-stop); }
+
 .readout { padding: 12px 0; border-bottom: 1px solid var(--edge-soft); }
 .readout:last-child { border-bottom: none; }
 

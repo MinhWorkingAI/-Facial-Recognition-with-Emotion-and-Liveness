@@ -131,29 +131,6 @@ export default function DiagnosticsView({ camera, onRegistryChange }) {
     return blob;
   }, [camera.videoRef]);
 
-  // Verify expects a 128x128 input — resize the crop to match.
-  // Without keypoint-based alignment the similarity score isn't meaningful,
-  // but this satisfies the backend's dimension check so the endpoint
-  // returns a response instead of 400.
-  const get128Crop = useCallback(async () => {
-    const v = camera.videoRef.current;
-    if (!v) throw new Error('Camera not ready');
-    const { dataUrl, pixelBox: pb } = await cropToBlob(v);
-    setLastCropPreview({ dataUrl, pixelBox: pb });
-
-    const img = await new Promise((resolve, reject) => {
-      const i = new Image();
-      i.onload = () => resolve(i);
-      i.onerror = reject;
-      i.src = dataUrl;
-    });
-    const c = document.createElement('canvas');
-    c.width = 128;
-    c.height = 128;
-    c.getContext('2d').drawImage(img, 0, 0, 128, 128);
-    return new Promise((res) => c.toBlob(res, 'image/jpeg', 0.9));
-  }, [camera.videoRef]);
-
   const requireCam = () => {
     if (!camera.active) {
       return { ok: false, status: 0, latency: 0, error: 'Start the camera first.' };
@@ -178,10 +155,10 @@ export default function DiagnosticsView({ camera, onRegistryChange }) {
     const e = requireCam(); if (e) return e;
     return postSpoof(await getCrop());
   };
-  // Verify expects pre-aligned 128x128 — see get128Crop comment above.
+
   const runVerify = async () => {
     const e = requireCam(); if (e) return e;
-    return postVerify(await get128Crop());
+    return postVerify(await getFullFrame());
   };
   // Register sends the FULL FRAME — the backend's inference_service.register_inference()
   // runs detection + alignment internally. Sending a pre-crop breaks that flow.
@@ -396,9 +373,9 @@ export default function DiagnosticsView({ camera, onRegistryChange }) {
         <EndpointCard
           title="Recognition (Verify)"
           path={PATHS.verify}
-          description="Sends a 128×128 resized crop to match the backend's expected input format. Note: the backend's /verify route doesn't run detection + face alignment internally, so the similarity score is unreliable as a standalone test — use the Pipeline card for meaningful end-to-end verification."
+          description="Compares a face against the Qdrant registry and returns the closest match with similarity score. Sends the full frame — backend runs detection + embedding internally."
           onRun={runVerify}
-          hint="Sends 128×128 crop"
+          hint="Sends full frame"
           summaryRenderer={(b) => [
             { key: 'Label',      val: b.recognition?.label || '—', kind: 'accent' },
             { key: 'Matched',    val: b.recognition?.matched ? 'YES' : 'no',

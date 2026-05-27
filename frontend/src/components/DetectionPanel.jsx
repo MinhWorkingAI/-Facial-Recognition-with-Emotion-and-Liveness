@@ -3,11 +3,8 @@ import { EmotionGlyph } from './Icons.jsx';
 
 export default function DetectionPanel({ analysis }) {
   const faces = analysis?.faces || [];
-  const face = faces[0];
-  const recognition = face?.recognition;
-  const emotion = face?.emotion;
-  const antiSpoofing = face?.anti_spoofing;
-  const noFace = !face;
+  const noFace = faces.length === 0;
+  const singleFace = faces.length === 1;
   const multiFace = faces.length > 1;
 
   return (
@@ -21,24 +18,49 @@ export default function DetectionPanel({ analysis }) {
           {noFace
             ? 'Live readings'
             : multiFace
-              ? <><span style={{ color: 'var(--accent)' }}>{faces.length} faces</span> · showing №1</>
+              ? <><span style={{ color: 'var(--accent)' }}>{faces.length} faces</span> · roster</>
               : '1 face · live'}
         </span>
       </header>
 
-      {multiFace && (
-        <div className="multi-face-note">
-          Stats for the remaining {faces.length - 1} {faces.length - 1 === 1 ? 'face' : 'faces'} are
-          drawn next to {faces.length - 1 === 1 ? 'their box' : 'their boxes'} in the webcam view.
-        </div>
-      )}
+      {noFace && <EmptyState />}
+      {singleFace && <SingleFaceView face={faces[0]} />}
+      {multiFace && <MultiFaceRoster faces={faces} />}
+    </section>
+  );
+}
 
-      {/* IDENTITY */}
+/* Empty state */
+function EmptyState() {
+  return (
+    <>
       <div className="readout">
         <div className="readout__label">Identity</div>
-        {noFace ? (
-          <div className="readout__value readout__value--mute">No one in frame</div>
-        ) : recognition?.matched && recognition.label !== 'unknown' ? (
+        <div className="readout__value readout__value--mute">No one in frame</div>
+      </div>
+      <div className="readout">
+        <div className="readout__label">Affect</div>
+        <div className="readout__value readout__value--mute">—</div>
+      </div>
+      <div className="readout">
+        <div className="readout__label">Liveness</div>
+        <div className="readout__value readout__value--mute">—</div>
+      </div>
+    </>
+  );
+}
+
+/* Single-face detailed view */
+function SingleFaceView({ face }) {
+  const recognition = face?.recognition;
+  const emotion = face?.emotion;
+  const antiSpoofing = face?.anti_spoofing;
+
+  return (
+    <>
+      <div className="readout">
+        <div className="readout__label">Identity</div>
+        {recognition?.matched && recognition.label !== 'unknown' ? (
           <>
             <div className="readout__value readout__value--accent">{recognition.label}</div>
             <ConfidenceBar value={recognition.confidence} variant="accent" />
@@ -56,30 +78,20 @@ export default function DetectionPanel({ analysis }) {
         )}
       </div>
 
-      {/* EMOTION */}
       <div className="readout">
         <div className="readout__label">Affect</div>
-        {noFace ? (
-          <div className="readout__value readout__value--mute">—</div>
-        ) : (
-          <>
-            <div className="readout__row">
-              <EmotionGlyph emotion={emotion?.label} />
-              <div style={{ flex: 1 }}>
-                <div className="readout__value">{capitalize(emotion?.label) || '—'}</div>
-              </div>
-            </div>
-            <ConfidenceBar value={emotion?.confidence ?? 0} />
-          </>
-        )}
+        <div className="readout__row">
+          <EmotionGlyph emotion={emotion?.label} />
+          <div style={{ flex: 1 }}>
+            <div className="readout__value">{capitalize(emotion?.label) || '—'}</div>
+          </div>
+        </div>
+        <ConfidenceBar value={emotion?.confidence ?? 0} />
       </div>
 
-      {/* LIVENESS */}
       <div className="readout">
         <div className="readout__label">Liveness</div>
-        {noFace ? (
-          <div className="readout__value readout__value--mute">—</div>
-        ) : antiSpoofing?.label === 'spoof' ? (
+        {antiSpoofing?.label === 'spoof' ? (
           <>
             <div className="readout__row">
               <span className="readout__indicator stop" />
@@ -99,7 +111,60 @@ export default function DetectionPanel({ analysis }) {
           <div className="readout__value readout__value--mute">Awaiting subject</div>
         )}
       </div>
-    </section>
+    </>
+  );
+}
+
+/* Multi-face roster */
+function MultiFaceRoster({ faces }) {
+  return (
+    <ul className="face-roster">
+      {faces.map((face, i) => {
+        const rec = face.recognition;
+        const emo = face.emotion;
+        const live = face.anti_spoofing;
+        const matched = rec?.matched && rec.label !== 'unknown';
+
+        return (
+          <li key={i} className="face-roster__item">
+            <div className="face-roster__head">
+              <span className="face-roster__num">№{String(i + 1).padStart(2, '0')}</span>
+              <span className={`face-roster__name ${matched ? 'matched' : 'unmatched'}`}>
+                {matched ? rec.label : 'Unidentified'}
+              </span>
+              {rec && (
+                <span className="face-roster__conf">
+                  {(rec.confidence * 100).toFixed(0)}%
+                </span>
+              )}
+            </div>
+
+            <div className="face-roster__stats">
+              {emo?.label && (
+                <span className="face-roster__stat">
+                  {capitalize(emo.label)}
+                  {emo.confidence != null && (
+                    <span className="face-roster__pct"> {(emo.confidence * 100).toFixed(0)}%</span>
+                  )}
+                </span>
+              )}
+              {live?.label === 'real' && (
+                <span className="face-roster__stat go">
+                  <span className="face-roster__dot go" />
+                  LIVE{live.confidence != null ? ` ${(live.confidence * 100).toFixed(0)}%` : ''}
+                </span>
+              )}
+              {live?.label === 'spoof' && (
+                <span className="face-roster__stat stop">
+                  <span className="face-roster__dot stop" />
+                  SPOOF{live.confidence != null ? ` ${(live.confidence * 100).toFixed(0)}%` : ''}
+                </span>
+              )}
+            </div>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
