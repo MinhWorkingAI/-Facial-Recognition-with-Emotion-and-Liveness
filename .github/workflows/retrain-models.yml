@@ -22,10 +22,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          SPOOF_DATASET_SRC="$HOME/Desktop/Datasets/LCC_FASD"
-          EMOTION_DATASET_SRC="$HOME/Desktop/Datasets/emotion/AffectNet"
-          RECOGNITION_DATASET_SRC="$HOME/Desktop/Datasets/recognition/classification_data_aligned"
-          RECOGNITION_DATASET_PRETRAINED_BACKBONE="$HOME/Desktop/Datasets/recognition/resnet18_110.pth"
+          SPOOF_DATASET_SRC="$HOME/Desktop/Dataset2/LCC_FASD"
+          EMOTION_DATASET_SRC="$HOME/Desktop/Dataset2/emotion/AffectNet"
+          RECOGNITION_DATASET_SRC="$HOME/Desktop/Dataset2/recognition/classification_data_aligned"
+          RECOGNITION_DATASET_PRETRAINED_BACKBONE="$HOME/Desktop/Dataset2/recognition/resnet18_110.pth"
 
           if [ ! -d "$SPOOF_DATASET_SRC" ]; then
             echo "Missing spoof dataset: $SPOOF_DATASET_SRC" >&2
@@ -58,7 +58,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$WEIGHTS_DIR"
-          cp -f training_module/anti_spoofing_module_MobileNetV2/model/fasd_mobilenetv2_model.onnx "$WEIGHTS_DIR/anti_spoofing.onnx"
+          cp -f training_module/anti_spoofing_module_MobileNetV2/model/anti_spoofing.onnx "$WEIGHTS_DIR/anti_spoofing.onnx"
 
       - name: Train emotion model
         shell: bash
