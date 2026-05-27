@@ -10,13 +10,12 @@ import DiagnosticsView from './components/DiagnosticsView.jsx';
 import { useCamera } from './hooks/useCamera.js';
 import { useFrameAnalysis } from './hooks/useFrameAnalysis.js';
 import { useToasts } from './hooks/useToasts.js';
-import { registerFace, ping } from './services/api.js';
+import { registerFace, ping, getVerificationStatus } from './services/api.js';
 
 const DEDUP_WINDOW_MS = 10_000;
 
 export default function App() {
-  // ── Routing ──
-  // Simple hash routing — survives reloads and is shareable
+  // Routing 
   const [route, setRoute] = useState(() =>
     window.location.hash === '#diagnostics' ? 'diagnostics' : 'main'
   );
@@ -32,39 +31,52 @@ export default function App() {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
-  // ── Shared camera (single source — same instance used by both pages) ──
+  // Shared camera
   const camera = useCamera();
 
-  // ── Toasts ──
+  // Toasts
   const { toasts, push } = useToasts();
 
-  // ── Main-page state ──
+  // Main-page state
   const { analysis, connected } = useFrameAnalysis(
     camera.captureBlob,
     camera.active && route === 'main',
   );
+
+  // Registry — local mirror plus backend-reported total count
   const [registry, setRegistry] = useState({});
+  const [backendRegistryCount, setBackendRegistryCount] = useState(null);
   const [selectedName, setSelectedName] = useState(null);
+
   const [log, setLog] = useState([]);
   const [seenToday] = useState(() => new Set());
   const [modalOpen, setModalOpen] = useState(false);
   const [pingResult, setPingResult] = useState(null);
 
-  // ── Backend ping on first mount ──
+  // Helper: refresh registered count from backend
+  const refreshBackendCount = useCallback(async () => {
+    const status = await getVerificationStatus();
+    if (status && typeof status.points === 'number') {
+      setBackendRegistryCount(status.points);
+    }
+  }, []);
+
+  // On mount: ping + backend count
   useEffect(() => {
     ping().then((ok) => {
       setPingResult(ok);
       if (ok) push('Backend reachable', 'success');
       else push('Backend not reachable — start it before running tests', 'error', 6000);
     });
-  }, [push]);
+    refreshBackendCount();
+  }, [push, refreshBackendCount]);
 
-  // ── Camera errors ──
+  // Camera errors
   useEffect(() => {
     if (camera.error) push(`Camera: ${camera.error}`, 'error');
   }, [camera.error, push]);
 
-  // ── Attendance ingestion (main page only) ──
+  // Attendance ingestion (main page only)
   useEffect(() => {
     if (route !== 'main') return;
     const face = analysis?.faces?.[0];
@@ -99,39 +111,46 @@ export default function App() {
     });
   }, [analysis, route, seenToday]);
 
-  // ── Handlers ──
+  // Handlers
   const handleToggleCamera = useCallback(() => {
     if (camera.active) camera.stop();
     else camera.start();
   }, [camera]);
 
   const handleOpenRegister = useCallback(() => {
-    if (!camera.active) { push('Begin Watch first to enrol someone', 'warn'); return; }
+    if (!camera.active) { push('Turn on the camera first to enrol someone', 'warn'); return; }
     setModalOpen(true);
   }, [camera.active, push]);
 
-  const handleRegister = useCallback(async (name) => {
+  const handleRegister = useCallback(async (personId, personName) => {
     const blob = await camera.captureBlob();
     if (!blob) throw new Error('Could not capture a frame');
-    try { await registerFace(blob, name); }
-    catch (e) { throw new Error(`Registration failed: ${e.message}`); }
+    try {
+      await registerFace(blob, personId, personName);
+    } catch (e) {
+      throw new Error(`Registration failed: ${e.message}`);
+    }
     setRegistry((r) => ({
       ...r,
-      [name]: { registeredAt: new Date().toISOString(), lastSeen: null },
+      [personName || personId]: {
+        registeredAt: new Date().toISOString(),
+        lastSeen: null,
+      },
     }));
-    push(`${name} enrolled`, 'success');
+    push(`${personName || personId} enrolled`, 'success');
     setModalOpen(false);
-  }, [camera, push]);
+    refreshBackendCount();
+  }, [camera, push, refreshBackendCount]);
 
   const handleRemove = useCallback(() => {
     if (!selectedName) return;
-    if (!confirm(`Strike "${selectedName}" from the registry?`)) return;
+    if (!confirm(`Remove "${selectedName}" from your local list? (Backend record remains until a delete endpoint is added.)`)) return;
     setRegistry((r) => { const n = { ...r }; delete n[selectedName]; return n; });
     setSelectedName(null);
-    push('Entry removed from local registry', 'success');
+    push('Removed from local list', 'success');
   }, [selectedName, push]);
 
-  // Effective connection status used by the topbar
+  // Effective connection status for topbar
   const effectiveConnected = route === 'main' ? connected : pingResult;
 
   return (
@@ -144,7 +163,7 @@ export default function App() {
       />
 
       {route === 'diagnostics' ? (
-        <DiagnosticsView camera={camera} />
+        <DiagnosticsView camera={camera} onRegistryChange={refreshBackendCount} />
       ) : (
         <main className="app__main">
           <CameraView
@@ -160,8 +179,10 @@ export default function App() {
             <RegisteredFaces
               entries={registry}
               selectedName={selectedName}
+              backendCount={backendRegistryCount}
               onSelect={(n) => setSelectedName(n === selectedName ? null : n)}
               onRemove={handleRemove}
+              onRefresh={refreshBackendCount}
             />
             <AttendanceLog entries={log} />
           </aside>

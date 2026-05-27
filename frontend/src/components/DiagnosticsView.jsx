@@ -5,122 +5,39 @@ import { HARDCODED_BOX, cropToBlob, frameToBlob } from '../utils/cropBox.js';
 import {
   postPipeline, postDetect, postEmotion, postSpoof,
   postVerify, postRegister, ping, getEndpointPaths,
+  getVerificationStatus,
 } from '../services/api.js';
 
 const PATHS = getEndpointPaths();
 
-/**
- * Diagnostics / dev test page.
- *
- * Layout:
- *  ┌────────────────────────────┬───────────────────────────┐
- *  │ Camera view with hardcoded │ Per-endpoint test cards   │
- *  │ box drawn on overlay       │ Each card runs one POST   │
- *  │                            │ and shows the response.   │
- *  └────────────────────────────┴───────────────────────────┘
- */
-export default function DiagnosticsView({ camera }) {
+export default function DiagnosticsView({ camera, onRegistryChange }) {
   const overlayRef = useRef(null);
   const containerRef = useRef(null);
   const [pixelBox, setPixelBox] = useState(null);
   const [lastCropPreview, setLastCropPreview] = useState(null);
   const [backendReachable, setBackendReachable] = useState(null);
-  const [overlayBox, setOverlayBox] = useState({ bbox: HARDCODED_BOX, source: 'hardcoded' });
+  const [verificationStatus, setVerificationStatus] = useState(null);
 
-  const normalizeBBox = useCallback((bbox, imgW, imgH) => {
-    if (!bbox) return null;
-    const isNormalized =
-      bbox.x <= 1 && bbox.y <= 1 && bbox.w <= 1 && bbox.h <= 1;
-    if (isNormalized) return bbox;
-    if (!imgW || !imgH) return null;
-    return {
-      x: bbox.x / imgW,
-      y: bbox.y / imgH,
-      w: bbox.w / imgW,
-      h: bbox.h / imgH,
-    };
-  }, []);
-
-  // ── Backend reachability check on mount + every 5s ──
+  // Backend reachability ping + status refresh
   useEffect(() => {
     let cancelled = false;
     const check = async () => {
       const ok = await ping();
-      if (!cancelled) setBackendReachable(ok);
+      if (cancelled) return;
+      setBackendReachable(ok);
+      if (ok) {
+        const status = await getVerificationStatus();
+        if (!cancelled) setVerificationStatus(status);
+      } else {
+        setVerificationStatus(null);
+      }
     };
     check();
     const t = setInterval(check, 5000);
     return () => { cancelled = true; clearInterval(t); };
   }, []);
 
-  // ── Draw the current overlay box (hardcoded or detection) ──
-  const drawOverlay = useCallback(() => {
-    const c = overlayRef.current;
-    if (!c) return;
-    const ctx = c.getContext('2d');
-    ctx.clearRect(0, 0, c.width, c.height);
-    if (!camera.active) return;
-
-    const v = camera.videoRef.current;
-    if (!v || !v.videoWidth) return;
-
-    // Compute object-fit: cover scale
-    const iw = v.videoWidth, ih = v.videoHeight;
-    const cw = c.width, ch = c.height;
-    const va = iw / ih, ca = cw / ch;
-    let scale, ox = 0, oy = 0;
-    if (ca > va) { scale = cw / iw; oy = (ch - ih * scale) / 2; }
-    else         { scale = ch / ih; ox = (cw - iw * scale) / 2; }
-
-    const activeBox = overlayBox?.bbox || HARDCODED_BOX;
-    let bx = activeBox.x * iw * scale + ox;
-    const by = activeBox.y * ih * scale + oy;
-    const bw = activeBox.w * iw * scale;
-    const bh = activeBox.h * ih * scale;
-
-    // Flip x for the mirrored video display
-    bx = cw - bx - bw;
-
-    // Update pixel box state for the info strip (un-mirrored, original)
-    setPixelBox({
-      x: Math.floor(activeBox.x * iw),
-      y: Math.floor(activeBox.y * ih),
-      w: Math.floor(activeBox.w * iw),
-      h: Math.floor(activeBox.h * ih),
-    });
-
-    // Box: corner brackets + dashed center, accent color
-    ctx.strokeStyle = '#E2823A';
-    ctx.lineWidth = 1.5;
-    const corner = Math.min(22, bw * 0.2, bh * 0.2);
-
-    const c2 = (x, y, dx1, dy1, dx2, dy2) => {
-      ctx.beginPath();
-      ctx.moveTo(x + dx1, y + dy1);
-      ctx.lineTo(x, y);
-      ctx.lineTo(x + dx2, y + dy2);
-      ctx.stroke();
-    };
-    c2(bx, by, 0, corner, corner, 0);
-    c2(bx + bw, by, -corner, 0, 0, corner);
-    c2(bx, by + bh, 0, -corner, corner, 0);
-    c2(bx + bw, by + bh, -corner, 0, 0, -corner);
-
-    // Dashed inner rect
-    ctx.setLineDash([4, 4]);
-    ctx.lineWidth = 0.8;
-    ctx.strokeStyle = 'rgba(226, 130, 58, 0.35)';
-    ctx.strokeRect(bx, by, bw, bh);
-    ctx.setLineDash([]);
-
-    // Label above
-    ctx.font = '600 9px "IBM Plex Mono", monospace';
-    ctx.fillStyle = '#E2823A';
-    const label = overlayBox?.source === 'detect' ? 'DETECTION // LIVE' : 'CROP REGION // HARDCODED';
-    ctx.fillText(label, bx, by - 8);
-  }, [camera.active, camera.videoRef, overlayBox]);
-
-  // ── Resize overlay canvas to match container ──
+  // Resize overlay canvas to container
   useEffect(() => {
     const resize = () => {
       const c = overlayRef.current;
@@ -133,9 +50,73 @@ export default function DiagnosticsView({ camera }) {
     resize();
     window.addEventListener('resize', resize);
     return () => window.removeEventListener('resize', resize);
+  }, [camera.active]);
+
+  // Hardcoded box drawn for emotion/spoof crop testing
+  const drawOverlay = useCallback(() => {
+    const c = overlayRef.current;
+    if (!c) return;
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, c.width, c.height);
+    if (!camera.active) return;
+    const v = camera.videoRef.current;
+    if (!v || !v.videoWidth) return;
+
+    const iw = v.videoWidth, ih = v.videoHeight;
+    const cw = c.width, ch = c.height;
+    const va = iw / ih, ca = cw / ch;
+    let scale, ox = 0, oy = 0;
+    if (ca > va) { scale = cw / iw; oy = (ch - ih * scale) / 2; }
+    else         { scale = ch / ih; ox = (cw - iw * scale) / 2; }
+
+    let bx = HARDCODED_BOX.x * iw * scale + ox;
+    const by = HARDCODED_BOX.y * ih * scale + oy;
+    const bw = HARDCODED_BOX.w * iw * scale;
+    const bh = HARDCODED_BOX.h * ih * scale;
+    bx = cw - bx - bw; // mirror
+
+    setPixelBox({
+      x: Math.floor(HARDCODED_BOX.x * iw),
+      y: Math.floor(HARDCODED_BOX.y * ih),
+      w: Math.floor(HARDCODED_BOX.w * iw),
+      h: Math.floor(HARDCODED_BOX.h * ih),
+    });
+
+    ctx.strokeStyle = '#E2823A';
+    ctx.lineWidth = 1.5;
+    const corner = Math.min(22, bw * 0.2, bh * 0.2);
+    const c2 = (x, y, dx1, dy1, dx2, dy2) => {
+      ctx.beginPath();
+      ctx.moveTo(x + dx1, y + dy1);
+      ctx.lineTo(x, y);
+      ctx.lineTo(x + dx2, y + dy2);
+      ctx.stroke();
+    };
+    c2(bx, by, 0, corner, corner, 0);
+    c2(bx + bw, by, -corner, 0, 0, corner);
+    c2(bx, by + bh, 0, -corner, corner, 0);
+    c2(bx + bw, by + bh, -corner, 0, 0, -corner);
+
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 0.8;
+    ctx.strokeStyle = 'rgba(226, 130, 58, 0.35)';
+    ctx.strokeRect(bx, by, bw, bh);
+    ctx.setLineDash([]);
+
+    ctx.font = '600 9px "IBM Plex Mono", monospace';
+    ctx.fillStyle = '#E2823A';
+    ctx.fillText('CROP REGION // HARDCODED', bx, by - 8);
+  }, [camera.active, camera.videoRef]);
+
+  useEffect(() => {
+    if (!camera.active) return;
+    let raf;
+    const loop = () => { drawOverlay(); raf = requestAnimationFrame(loop); };
+    loop();
+    return () => cancelAnimationFrame(raf);
   }, [camera.active, drawOverlay]);
 
-  // ── Helpers used by endpoint cards ──
+  // Capture helpers
   const getFullFrame = useCallback(async () => {
     const v = camera.videoRef.current;
     if (!v) throw new Error('Camera not ready');
@@ -152,55 +133,42 @@ export default function DiagnosticsView({ camera }) {
 
   const requireCam = () => {
     if (!camera.active) {
-      return { ok: false, status: 0, latency: 0, error: 'Start the camera first (top-left button).' };
+      return { ok: false, status: 0, latency: 0, error: 'Start the camera first.' };
     }
     return null;
   };
 
-  // ── Endpoint test runners ──
+  // Endpoint runners
   const runPipeline = async () => {
-    const err = requireCam(); if (err) return err;
-    const res = await postPipeline(await getFullFrame());
-    if (res?.ok) {
-      const face = res.body?.faces?.[0]?.face;
-      const bbox = normalizeBBox(face?.bbox, res.body?.image_width, res.body?.image_height);
-      if (bbox) {
-        setOverlayBox({ bbox, source: 'detect' });
-      }
-    }
-    return res;
+    const e = requireCam(); if (e) return e;
+    return postPipeline(await getFullFrame());
   };
   const runDetect = async () => {
-    const err = requireCam(); if (err) return err;
-    const res = await postDetect(await getFullFrame());
-    if (res?.ok) {
-      const face = res.body?.faces?.[0];
-      const bbox = normalizeBBox(face?.bbox, res.body?.image_width, res.body?.image_height);
-      if (bbox) {
-        setOverlayBox({ bbox, source: 'detect' });
-      }
-    }
-    return res;
+    const e = requireCam(); if (e) return e;
+    return postDetect(await getFullFrame());
   };
-
-  useEffect(() => {
-    if (camera.active) drawOverlay();
-  }, [camera.active, drawOverlay, overlayBox]);
   const runEmotion = async () => {
-    const err = requireCam(); if (err) return err;
+    const e = requireCam(); if (e) return e;
     return postEmotion(await getCrop());
   };
   const runSpoof = async () => {
-    const err = requireCam(); if (err) return err;
+    const e = requireCam(); if (e) return e;
     return postSpoof(await getCrop());
   };
   const runVerify = async () => {
-    const err = requireCam(); if (err) return err;
-    return postVerify(await getCrop());
+    const e = requireCam(); if (e) return e;
+    // Verify endpoint now runs full inference internally; send full frame
+    return postVerify(await getFullFrame());
   };
   const runRegister = async (inputs) => {
-    const err = requireCam(); if (err) return err;
-    return postRegister(await getCrop(), inputs.person_id);
+    const e = requireCam(); if (e) return e;
+    const res = await postRegister(await getCrop(), inputs.person_id, inputs.person_name);
+    if (res.ok) {
+      // Refresh registered count once registration succeeds
+      onRegistryChange?.();
+      getVerificationStatus().then(setVerificationStatus);
+    }
+    return res;
   };
 
   return (
@@ -253,13 +221,12 @@ export default function DiagnosticsView({ camera }) {
             </div>
             <div className="camera__counter">
               <strong className="t-num">{camera.active ? 'LIVE' : 'OFF'}</strong>
-              &nbsp;&middot;&nbsp; {overlayBox?.source === 'detect' ? 'detected' : 'hardcoded'}
-              &nbsp;{((overlayBox?.bbox?.w ?? HARDCODED_BOX.w) * 100).toFixed(0)}%×{((overlayBox?.bbox?.h ?? HARDCODED_BOX.h) * 100).toFixed(0)}% region
+              &nbsp;&middot;&nbsp; hardcoded {(HARDCODED_BOX.w * 100).toFixed(0)}%×{(HARDCODED_BOX.h * 100).toFixed(0)}% region
             </div>
           </div>
         </div>
 
-        {/* Box dimensions info strip */}
+        {/* Box dimensions strip */}
         <div className="diag__box-info">
           <div className="diag__box-info-cell">
             <div className="diag__box-info-label">Box X</div>
@@ -279,7 +246,7 @@ export default function DiagnosticsView({ camera }) {
           </div>
         </div>
 
-        {/* Last sent crop preview */}
+        {/* Crop preview */}
         {lastCropPreview && (
           <div className="crop-preview">
             <img className="crop-preview__img" src={lastCropPreview.dataUrl} alt="Last crop sent" />
@@ -293,17 +260,15 @@ export default function DiagnosticsView({ camera }) {
         )}
       </div>
 
-      {/* ── RIGHT: Endpoint test cards ── */}
+      {/* ── RIGHT: Status + Endpoint test cards ── */}
       <div className="diag__test-col">
 
-        {/* Backend connection panel */}
+        {/* Backend connection */}
         <div className={`conn-panel ${backendReachable === true ? 'ok' : backendReachable === false ? 'err' : ''}`}>
           <div>
             <div className="conn-panel__label">Backend</div>
             <div className={`conn-panel__value ${backendReachable === true ? 'ok' : backendReachable === false ? 'err' : ''}`}>
-              {backendReachable === null ? 'Checking…'
-                : backendReachable ? 'Reachable'
-                : 'Unreachable'}
+              {backendReachable === null ? 'Checking…' : backendReachable ? 'Reachable' : 'Unreachable'}
             </div>
             <div className="conn-panel__url">
               proxied through /api · check VITE_BACKEND_URL in .env if offline
@@ -312,12 +277,30 @@ export default function DiagnosticsView({ camera }) {
           <div className={`signal-dot ${backendReachable === true ? 'go' : backendReachable === false ? 'stop' : ''}`} />
         </div>
 
+        {/* Qdrant / verification status */}
+        {verificationStatus && (
+          <div className="conn-panel ok">
+            <div>
+              <div className="conn-panel__label">Vector Store · Qdrant</div>
+              <div className="conn-panel__value ok">
+                {verificationStatus.collection} · {verificationStatus.points} embeddings
+              </div>
+              <div className="conn-panel__url">
+                vector size {verificationStatus.vector_size} · top_k {verificationStatus.top_k}
+                {' · '}max {verificationStatus.max_registration_images} images/register
+              </div>
+            </div>
+            <div className="signal-dot go" />
+          </div>
+        )}
+
         <div className="diag__intro">
           <div className="diag__intro-title">How to use this page</div>
           <div className="diag__intro-text">
-            Start the camera, then press <em>Run test</em> on any card to send a request
-            to that endpoint. <em>Pipeline</em> &amp; <em>Detect</em> send the full frame;
-            the others send only the cropped region. Green border = success, red = error.
+            Start the camera, then press <em>Run test</em> on any card to send a
+            request to that endpoint. Green border = success, red = error. Some
+            cards send the full frame (the backend does its own face detection),
+            others send only the hardcoded crop region.
           </div>
         </div>
 
@@ -330,13 +313,21 @@ export default function DiagnosticsView({ camera }) {
           summaryRenderer={(b) => [
             { key: 'Image', val: `${b.image_width}×${b.image_height}` },
             { key: 'Faces', val: b.faces?.length ?? 0, kind: (b.faces?.length > 0) ? 'go' : '' },
+            ...(b.faces?.[0] ? [
+              { key: 'Emotion',  val: b.faces[0].emotion?.label || '—' },
+              { key: 'Liveness', val: b.faces[0].anti_spoofing?.label || '—',
+                kind: b.faces[0].anti_spoofing?.label === 'real' ? 'go'
+                   : b.faces[0].anti_spoofing?.label === 'spoof' ? 'stop' : '' },
+              { key: 'Identity', val: b.faces[0].recognition?.label || '—',
+                kind: b.faces[0].recognition?.matched ? 'go' : '' },
+            ] : []),
           ]}
         />
 
         <EndpointCard
           title="Face Detection"
           path={PATHS.detect}
-          description="Returns bounding boxes (x, y, w, h) for any faces found. Once this is wired up, the main page will use these coords."
+          description="Returns bounding boxes and 5-point landmarks for any faces found in the frame."
           onRun={runDetect}
           hint="Sends full frame"
           summaryRenderer={(b) => [
@@ -345,6 +336,7 @@ export default function DiagnosticsView({ camera }) {
             ...(b.faces?.[0] ? [
               { key: 'First bbox',
                 val: `${b.faces[0].bbox.x.toFixed(2)}, ${b.faces[0].bbox.y.toFixed(2)}, ${b.faces[0].bbox.w.toFixed(2)}, ${b.faces[0].bbox.h.toFixed(2)}` },
+              { key: 'Keypoints', val: b.faces[0].keypoints?.length ?? 0 },
               { key: 'Confidence', val: `${(b.faces[0].detection_confidence * 100).toFixed(1)}%`, kind: 'accent' },
             ] : []),
           ]}
@@ -353,7 +345,7 @@ export default function DiagnosticsView({ camera }) {
         <EndpointCard
           title="Emotion"
           path={PATHS.emotion}
-          description="Classifies the cropped face into an emotion label. Sends only the hardcoded crop region, not the full frame."
+          description="Classifies the cropped face into an emotion label. Sends only the hardcoded crop region."
           onRun={runEmotion}
           hint="Sends crop only"
           summaryRenderer={(b) => [
@@ -365,7 +357,7 @@ export default function DiagnosticsView({ camera }) {
         <EndpointCard
           title="Anti-Spoofing"
           path={PATHS.spoof}
-          description="Decides if the cropped face is a live person or a spoof (printed photo, screen replay). Sends only the crop."
+          description="Decides if the cropped face is live or spoof (printed photo, screen replay). Sends only the crop."
           onRun={runSpoof}
           hint="Sends crop only"
           summaryRenderer={(b) => [
@@ -380,9 +372,9 @@ export default function DiagnosticsView({ camera }) {
         <EndpointCard
           title="Recognition (Verify)"
           path={PATHS.verify}
-          description="Compares the cropped face against the registry and returns the closest match, similarity score, and whether it crosses the threshold."
+          description="Compares a face against the Qdrant registry and returns the closest match with similarity score. Sends the full frame — backend runs detection + embedding internally."
           onRun={runVerify}
-          hint="Sends crop only"
+          hint="Sends full frame"
           summaryRenderer={(b) => [
             { key: 'Label',      val: b.recognition?.label || '—', kind: 'accent' },
             { key: 'Matched',    val: b.recognition?.matched ? 'YES' : 'no',
@@ -394,12 +386,13 @@ export default function DiagnosticsView({ camera }) {
         <EndpointCard
           title="Register Identity"
           path={PATHS.register}
-          description="Stores a face embedding under the given person_id. Sends the crop region as the reference image."
+          description="Stores a face embedding in Qdrant under the given ID. Optionally include a display name shown in recognition results."
           inputs={[
-            { key: 'person_id', label: 'person_id', placeholder: 'e.g. alice_chen', required: true },
+            { key: 'person_id',   label: 'person_id',   placeholder: 'e.g. emp_021', required: true },
+            { key: 'person_name', label: 'person_name', placeholder: 'optional display name' },
           ]}
           onRun={runRegister}
-          hint="Sends crop + person_id"
+          hint="Sends crop + ID"
           summaryRenderer={(b) => [
             { key: 'Person ID', val: b.person_id || '—', kind: 'accent' },
             { key: 'Status',    val: b.status || '—' },
