@@ -2,11 +2,13 @@ import React from 'react';
 import { EmotionGlyph } from './Icons.jsx';
 
 export default function DetectionPanel({ analysis }) {
-  const face = analysis?.faces?.[0];
+  const faces = analysis?.faces || [];
+  const face = faces[0];
   const recognition = face?.recognition;
   const emotion = face?.emotion;
   const antiSpoofing = face?.anti_spoofing;
   const noFace = !face;
+  const multiFace = faces.length > 1;
 
   return (
     <section className="section">
@@ -15,8 +17,21 @@ export default function DetectionPanel({ analysis }) {
           <span className="section__num">§ 02</span>
           <span className="section__title">People on Screen</span>
         </div>
-        <span className="section__aside">Live readings</span>
+        <span className="section__aside">
+          {noFace
+            ? 'Live readings'
+            : multiFace
+              ? <><span style={{ color: 'var(--accent)' }}>{faces.length} faces</span> · showing №1</>
+              : '1 face · live'}
+        </span>
       </header>
+
+      {multiFace && (
+        <div className="multi-face-note">
+          Stats for the remaining {faces.length - 1} {faces.length - 1 === 1 ? 'face' : 'faces'} are
+          drawn next to {faces.length - 1 === 1 ? 'their box' : 'their boxes'} in the webcam view.
+        </div>
+      )}
 
       {/* IDENTITY */}
       <div className="readout">

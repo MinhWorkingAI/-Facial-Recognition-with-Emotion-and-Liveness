@@ -277,6 +277,17 @@ ul, ol { list-style: none; }
 .section__title { font-family: var(--font-display); font-size: var(--t-h4); font-weight: 400; font-style: italic; color: var(--paper); }
 .section__aside { font-family: var(--font-mono); font-size: var(--t-tiny); letter-spacing: 0.12em; color: var(--paper-3); text-transform: uppercase; }
 
+.multi-face-note {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: var(--t-small);
+  color: var(--paper-2);
+  line-height: 1.45;
+  padding: 10px 12px;
+  background: var(--bg-3);
+  border-left: 2px solid var(--accent);
+  margin-bottom: 12px;
+}
 .readout { padding: 12px 0; border-bottom: 1px solid var(--edge-soft); }
 .readout:last-child { border-bottom: none; }
 
