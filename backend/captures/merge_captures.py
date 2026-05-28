@@ -3,16 +3,8 @@ from pathlib import Path
 from PIL import Image
 import random
 
-
-# ---------------------------------------------------------------------------
-# SETTINGS — Changes based on base repo and where the training files are stored
-# ---------------------------------------------------------------------------
-
+#SETTINGS — Changes based on base repo and where the training files are stored
 screenshots_dir = Path("backend/captures/screenshots")
-
-min_detection_confidence = 0.7
-
-min_label_confidence = 0.7
 
 #Anti-spoofing paths
 train_fasd_path = Path("LCC_FASD/LCC_FASD_training")
@@ -21,6 +13,13 @@ test_fasd_path = Path("LCC_FASD/LCC_FASD_evaluation")
 #Emotion paths
 train_affectnet_path = Path("AffectNet/Train")
 test_affectnet_path = Path("AffectNet/Test")
+
+#Recognition paths
+recognition_path = Path("recognition_example")
+
+#Confidence Thresholds
+min_detection_confidence = 0.7
+min_label_confidence = 0.7
 
 
 #Read all paths
@@ -124,6 +123,17 @@ def main():
                 saved_true = True
 
                 print(f"Saved {file.name} Face {i + 1} to {output_file} Confidence: {emotion['confidence']}")
+
+            if recognition["confidence"] >= min_label_confidence:
+                if recognition["label"] == "unknown" or recognition["matched"] == False:
+                    continue
+                else:
+                    output_path = recognition_path / recognition["label"]
+                    output_file = output_path / f"{file.stem}_{i + 1}.jpg"
+                    output_file.parent.mkdir(parents=True, exist_ok=True)
+                    cropped_face.save(output_file)
+                    saved_true = True
+                    print(f"Saved {file.name} Face {i + 1} to {output_file} Confidence: {recognition['confidence']}")
 
         if saved_true:
             file.unlink()

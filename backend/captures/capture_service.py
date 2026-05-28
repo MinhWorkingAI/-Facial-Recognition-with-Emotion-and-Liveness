@@ -4,15 +4,13 @@ from datetime import datetime
 
 from app.config import settings
 
-# ---------------------------------------------------------------------------
-# SETTINGS
-# ---------------------------------------------------------------------------
-
+#SETTINGS
 min_interval_secs = 10
 only_if_faces = True
 
 last_save_at = 0.0
 
+#Save Capture Function
 def save(image_bytes, payload):
     global last_save_at
 
@@ -24,7 +22,7 @@ def save(image_bytes, payload):
     
     current_time = time.monotonic()
 
-    if min_interval_secs and current_time - last_save_at < min_interval_secs:
+    if current_time - last_save_at < min_interval_secs:
         return
 
     last_save_at = current_time
