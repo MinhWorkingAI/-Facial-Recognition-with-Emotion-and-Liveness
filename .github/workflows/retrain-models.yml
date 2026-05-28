@@ -101,7 +101,13 @@ jobs:
           set -euo pipefail
           mkdir -p "$WEIGHTS_DIR"
           cp -f training_module/face_recognition_module/checkpoints_resnet18/train_3/resnet18_face.onnx "$WEIGHTS_DIR/resnet18_face.onnx"
-
+      
+      - name: Clean up previous docker containers
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker compose down --remove-orphans
+          
       - name: Build and run Docker container
         shell: bash
         run: |
