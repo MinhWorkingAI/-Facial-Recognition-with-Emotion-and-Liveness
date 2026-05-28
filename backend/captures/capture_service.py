@@ -28,6 +28,8 @@ def save(image_bytes, payload):
     last_save_at = current_time
 
     output_dir = settings.captures_dir
+    output_dir.mkdir(parents=True, exist_ok=True)  # add this
+
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
 
