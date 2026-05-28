@@ -1,21 +1,23 @@
 import json
+import os
 from pathlib import Path
 from PIL import Image
 import random
 
-#SETTINGS — Changes based on base repo and where the training files are stored
-screenshots_dir = Path("backend/captures/screenshots")
+screenshots_dir = Path(
+    os.environ.get(
+        "CAPTURES_DIR",
+        "backend/captures/screenshots"
+    )
+)
 
-#Anti-spoofing paths
-train_fasd_path = Path("LCC_FASD/LCC_FASD_training")
-test_fasd_path = Path("LCC_FASD/LCC_FASD_evaluation")
+train_fasd_path = Path(os.environ["TRAIN_FASD_PATH"])
+test_fasd_path = Path(os.environ["TEST_FASD_PATH"])
 
-#Emotion paths
-train_affectnet_path = Path("AffectNet/Train")
-test_affectnet_path = Path("AffectNet/Test")
+train_affectnet_path = Path(os.environ["TRAIN_AFFECTNET_PATH"])
+test_affectnet_path = Path(os.environ["TEST_AFFECTNET_PATH"])
 
-#Recognition paths
-recognition_path = Path("recognition_example")
+recognition_path = Path(os.environ["RECOGNITION_PATH"])
 
 #Confidence Thresholds
 min_detection_confidence = 0.7
@@ -68,6 +70,16 @@ def save_split():
     else:
         value = 1
     return value
+
+def save_recognition_split():
+    value = random.random()
+
+    if value < 0.7:
+        return "train"
+    elif value < 0.85:
+        return "val"
+    else:
+        return "test"
 
 
 def main():
@@ -125,16 +137,37 @@ def main():
                 print(f"Saved {file.name} Face {i + 1} to {output_file} Confidence: {emotion['confidence']}")
 
             if recognition["confidence"] >= min_label_confidence:
-                if recognition["label"] == "unknown" or recognition["matched"] == False:
+                if recognition["label"] == "unknown" or recognition["matched"] is False:
                     continue
-                else:
-                    output_path = recognition_path / recognition["label"]
-                    output_file = output_path / f"{file.stem}_{i + 1}.jpg"
-                    output_file.parent.mkdir(parents=True, exist_ok=True)
-                    cropped_face.save(output_file)
-                    saved_true = True
-                    print(f"Saved {file.name} Face {i + 1} to {output_file} Confidence: {recognition['confidence']}")
 
+                identity = recognition["label"]
+
+                split = save_recognition_split()
+
+                split_dirs = {
+                    "train": recognition_path / "train_data",
+                    "val": recognition_path / "val_data",
+                    "test": recognition_path / "test_data",
+                }
+
+                # Ensure class folders exist in ALL splits
+                for split_dir in split_dirs.values():
+                    (split_dir / identity).mkdir(parents=True, exist_ok=True)
+
+                output_path = split_dirs[split] / identity
+
+                output_file = output_path / f"{file.stem}_{i + 1}.jpg"
+
+                cropped_face.save(output_file)
+
+                saved_true = True
+
+                print(
+                    f"Saved {file.name} Face {i + 1} "
+                    f"to {output_file} "
+                    f"Confidence: {recognition['confidence']}"
+                )
+    
         if saved_true:
             file.unlink()
             image_file.unlink()
