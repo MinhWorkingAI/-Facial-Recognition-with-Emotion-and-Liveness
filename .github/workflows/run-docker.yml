@@ -1,4 +1,4 @@
-name: Retrain Models
+name: Run docker without retraining
 
 on:
   workflow_dispatch:
