@@ -20,13 +20,13 @@ services:
     environment:
       QDRANT_URL: http://qdrant:6333
       BACKEND_WEIGHTS_DIR: /app/weights
-      BACKEND_CAPTURES_DIR: /app/captures
+      BACKEND_CAPTURES_DIR: /app/captures/screenshots
       BACKEND_USE_TRITON: "true"
       TRITON_URL: triton:8000
     volumes:
       - ./backend/app/configs:/app/app/configs:ro
       - ./backend/weights:/app/weights:ro
-      - ./backend/captures:/app/captures
+      - captures_data:/app/captures
     depends_on:
       - qdrant
       - triton
@@ -58,3 +58,4 @@ services:
 
 volumes:
   qdrant_data:
+  captures_data:
