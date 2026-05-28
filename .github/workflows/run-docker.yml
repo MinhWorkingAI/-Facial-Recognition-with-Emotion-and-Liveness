@@ -68,8 +68,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
-          python backend/captures/merge_captures.py
+          export PYTHONPATH=$PWD
+          python -m backend.captures.merge_captures
         env:
           CAPTURES_DIR: runner_captures
 
