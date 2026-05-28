@@ -58,4 +58,6 @@ services:
 
 volumes:
   qdrant_data:
+    name: qdrant_data
   captures_data:
+    name: captures_data
