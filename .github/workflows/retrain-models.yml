@@ -49,6 +49,9 @@ jobs:
           cp -a "$EMOTION_DATASET_SRC"/* "$EMOTION_DATASET_DEST/"
           cp -a "$RECOGNITION_DATASET_SRC"/* "$RECOGNITION_DATASET_DEST/"
           cp -f "$PRETRAINED_BACKBONE_SRC" training_module/face_recognition_module/resnet18_110.pth
+      
+
+
 
       - name: Train anti-spoofing model
         shell: bash
@@ -112,4 +115,4 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build
+          docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build -d
