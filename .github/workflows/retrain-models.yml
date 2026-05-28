@@ -14,6 +14,7 @@ jobs:
       EMOTION_DATASET_DEST: "training_module/emotion_module/affectnet/AffectNet"
       RECOGNITION_DATASET_DEST: "training_module/face_recognition_module/dataset/11-785-fall-20-homework-2-part-2/classification_data_aligned"
       WEIGHTS_DIR: "backend/weights"
+      RECOGNITION_DATASET_PRETRAINED_BACKBONE: "$HOME/Desktop/Dataset2/recognition/resnet18_110.pth"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,7 +26,7 @@ jobs:
           SPOOF_DATASET_SRC="$HOME/Desktop/Dataset2/LCC_FASD"
           EMOTION_DATASET_SRC="$HOME/Desktop/Dataset2/emotion/AffectNet"
           RECOGNITION_DATASET_SRC="$HOME/Desktop/Dataset2/recognition/classification_data_aligned"
-          RECOGNITION_DATASET_PRETRAINED_BACKBONE="$HOME/Desktop/Dataset2/recognition/resnet18_110.pth"
+          
 
           if [ ! -d "$SPOOF_DATASET_SRC" ]; then
             echo "Missing spoof dataset: $SPOOF_DATASET_SRC" >&2
