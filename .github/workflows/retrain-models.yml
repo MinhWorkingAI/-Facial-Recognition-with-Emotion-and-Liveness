@@ -137,6 +137,19 @@ jobs:
           mkdir -p "$WEIGHTS_DIR"
           cp -f training_module/anti_spoofing_module_MobileNetV2/model/anti_spoofing.onnx "$WEIGHTS_DIR/anti_spoofing.onnx"
 
+      - name: Upload anti-spoofing reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: anti-spoofing-metrics
+          retention-days: 7
+          path: |
+            training_module/anti_spoofing_module_MobileNetV2/model/classification_report.txt
+            training_module/anti_spoofing_module_MobileNetV2/model/confusion_matrix.png
+            training_module/anti_spoofing_module_MobileNetV2/model/metrics.json
+            training_module/anti_spoofing_module_MobileNetV2/model/dataset_summary.csv
+            training_module/anti_spoofing_module_MobileNetV2/model/training_graph.png
+          if-no-files-found: error
+
       - name: Train emotion model
         shell: bash
         working-directory: training_module/emotion_module/affectnet
@@ -156,6 +169,14 @@ jobs:
           mkdir -p "$WEIGHTS_DIR"
           cp -f training_module/emotion_module/affectnet/emotion.onnx "$WEIGHTS_DIR/emotion.onnx"
 
+      - name: Upload emotion metrics
+        uses: actions/upload-artifact@v4
+        with:
+          name: emotion-metrics
+          retention-days: 7
+          path: training_module/emotion_module/affectnet/metrics/**
+          if-no-files-found: error
+
       - name: Train recognition model
         shell: bash
         working-directory: training_module/face_recognition_module
@@ -172,6 +193,23 @@ jobs:
           set -euo pipefail
           mkdir -p "$WEIGHTS_DIR"
           cp -f training_module/face_recognition_module/checkpoints_resnet18/train_3/resnet18_face.onnx "$WEIGHTS_DIR/resnet18_face.onnx"
+
+      - name: Upload recognition metrics
+        uses: actions/upload-artifact@v4
+        with:
+          name: recognition-metrics
+          retention-days: 7
+          path: |
+            training_module/face_recognition_module/checkpoints_resnet18/train_3/metrics.csv
+            training_module/face_recognition_module/checkpoints_resnet18/train_3/test_confusion_matrix_nonzero.csv
+            training_module/face_recognition_module/checkpoints_resnet18/train_3/test_roc_curve.csv
+            training_module/face_recognition_module/checkpoints_resnet18/train_3/test_roc_curve.png
+            training_module/face_recognition_module/checkpoints_resnet18/train_3/test_verification_pairs.csv
+            training_module/face_recognition_module/checkpoints_resnet18/train_3/training_curves.png
+            training_module/face_recognition_module/checkpoints_resnet18/train_3/training_history.json
+            training_module/face_recognition_module/checkpoints_resnet18/train_3/training_metadata.json
+            training_module/face_recognition_module/checkpoints_resnet18/train_3/validation_metrics.png
+          if-no-files-found: error
       
       - name: Clean up previous docker containers
         shell: bash
