@@ -160,7 +160,7 @@ jobs:
           source "$(conda info --base)/etc/profile.d/conda.sh"
           conda activate "$EMOTION_CONDA_ENV"
           set -u
-          python train.py
+          PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True" python train.py
           python export_onnx.py
 
       - name: Publish emotion weights
