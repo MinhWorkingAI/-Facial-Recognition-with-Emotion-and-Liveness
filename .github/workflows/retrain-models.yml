@@ -185,7 +185,7 @@ jobs:
           set -euo pipefail
           source "$(conda info --base)/etc/profile.d/conda.sh"
           conda activate "$RECOGNITION_CONDA_ENV"
-          python train_resnet18.py --pretrained-backbone resnet18_110.pth --output-dir checkpoints_resnet18/train_3 --freeze-backbone 3 --optimizer adamw --scheduler cosine --lr 0.005 --epochs 50 --batch-size 64 --dropout 0.5 --loss focal --head arcface --resize-size 0 --amp > train.log
+          python train_resnet18.py --pretrained-backbone resnet18_110.pth --output-dir checkpoints_resnet18/train_3 --freeze-backbone 3 --optimizer adamw --scheduler cosine --lr 0.005 --epochs 50 --batch-size 64 --dropout 0.5 --loss focal --head arcface --resize-size 0 > train.log
           python export_onnx.py --device cuda
 
       - name: Publish recognition weights
