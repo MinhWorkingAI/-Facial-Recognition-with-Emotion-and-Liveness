@@ -223,6 +223,8 @@ jobs:
         run: |
           set -euo pipefail
           docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build -d
+          echo "Waiting for services to start..."
+          sleep 15
 
       - name: Run API tests
         shell: bash

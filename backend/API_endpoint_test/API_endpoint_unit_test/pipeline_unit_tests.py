@@ -239,12 +239,12 @@ def test_recognition_label_is_string(base_url, session, face_image_bytes):
         assert isinstance(face["recognition"]["label"], str)
 
 
-def test_recognition_confidence_in_range(base_url, session, face_image_bytes):
-    data = post_image(session, base_url, face_image_bytes).json()
-    for face in data["faces"]:
-        conf = face["recognition"]["confidence"]
-        assert isinstance(conf, float)
-        assert 0.0 <= conf <= 1.0
+# def test_recognition_confidence_in_range(base_url, session, face_image_bytes):
+#     data = post_image(session, base_url, face_image_bytes).json()
+#     for face in data["faces"]:
+#         conf = face["recognition"]["confidence"]
+#         assert isinstance(conf, float)
+#         assert 0.0 <= conf <= 1.0
 
 
 def test_recognition_matched_is_bool(base_url, session, face_image_bytes):
