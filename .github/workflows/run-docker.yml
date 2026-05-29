@@ -131,3 +131,12 @@ jobs:
         run: |
           set -euo pipefail
           docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build -d
+
+
+      - name: Run API tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          source "$(conda info --base)/etc/profile.d/conda.sh"
+          conda activate mlops
+          pytest -v
