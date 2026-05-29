@@ -6,6 +6,7 @@ on:
 jobs:
   retrain:
     runs-on: self-hosted
+    timeout-minutes: 2000
     env:
       SPOOF_CONDA_ENV: "tensorflow_spoof"
       EMOTION_CONDA_ENV: "emotion_detection"
