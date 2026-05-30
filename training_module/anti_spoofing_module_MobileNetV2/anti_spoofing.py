@@ -14,6 +14,7 @@ import tensorflow as tf
 import tf2onnx
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
 
+#Added by DevOps Engineer 
 gpus = tf.config.list_physical_devices('GPU')
 if gpus:
     try:
@@ -47,7 +48,7 @@ IMAGE_SIZE = 224
 IMG_SIZE = (IMAGE_SIZE, IMAGE_SIZE)
 IMG_SHAPE = IMG_SIZE + (3,)
 
-BATCH_SIZE = 16
+BATCH_SIZE = 32
 INITIAL_EPOCHS = 15
 FINE_TUNE_EPOCHS = 15
 FINE_TUNE_AT = 0
