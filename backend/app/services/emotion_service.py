@@ -77,7 +77,7 @@ class EmotionService(BaseService):
 		Output per face:
 		  {
 		    "label":      str,   # e.g. "neutral" | "happy" | "sad" | "angry" | "surprise" | "fear" | "disgust"
-		    "confidence": float  # 0.0 – 1.0
+		    "confidence": float  # 0.0 - 1.0
 		  }
 		Returns a list even for a single image input.
 		"""

@@ -9,7 +9,7 @@ Each concrete service (liveness, emotion, face detection, …) must:
   3. Implement ``preprocess``, ``postprocess``, and optionally ``predict``.
 
 Inference can run through Triton HTTP or a local ONNX Runtime GPU session.
-All image handling is done with numpy arrays (uint8 RGB, shape H×W×3).
+All image handling is done with numpy arrays (uint8 RGB, shape HxWx3).
 """
 
 from __future__ import annotations
