@@ -30,10 +30,20 @@ const capitalize = (s) =>
  * @param {number} imgW
  * @param {number} imgH
  * @param {boolean} mirrored - whether display is CSS-mirrored
+ * @param {boolean} clear - whether to clear the target before drawing
+ * @param {number} annotationScale - scales labels for high-resolution exports
  */
-export function drawFaces(ctx, faces, imgW, imgH, mirrored = true) {
+export function drawFaces(
+  ctx,
+  faces,
+  imgW,
+  imgH,
+  mirrored = true,
+  clear = true,
+  annotationScale = 1,
+) {
   const canvas = ctx.canvas;
-  clearCanvas(ctx);
+  if (clear) clearCanvas(ctx);
   if (!faces?.length || !imgW || !imgH) return;
 
   // Match object-fit: cover of the video element
@@ -85,16 +95,16 @@ export function drawFaces(ctx, faces, imgW, imgH, mirrored = true) {
     // Bounding box with drop shadow for visibility 
     ctx.save();
     ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-    ctx.shadowBlur = 6;
+    ctx.shadowBlur = 6 * annotationScale;
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 1;
+    ctx.shadowOffsetY = annotationScale;
 
     ctx.strokeStyle = boxColor;
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 2.5 * annotationScale;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    const corner = Math.min(26, bw * 0.22, bh * 0.22);
+    const corner = Math.min(26 * annotationScale, bw * 0.22, bh * 0.22);
     const drawCorner = (x, y, dx1, dy1, dx2, dy2) => {
       ctx.beginPath();
       ctx.moveTo(x + dx1, y + dy1);
@@ -113,13 +123,13 @@ export function drawFaces(ctx, faces, imgW, imgH, mirrored = true) {
     if (keypoints.length > 0) {
       ctx.save();
       ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-      ctx.shadowBlur = 3;
+      ctx.shadowBlur = 3 * annotationScale;
       ctx.fillStyle = boxColor;
       for (const kp of keypoints) {
         const kpIsNorm = kp.x <= 1.0 && kp.y <= 1.0;
         const { x, y } = project(kp.x, kp.y, kpIsNorm);
         ctx.beginPath();
-        ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+        ctx.arc(x, y, 2.5 * annotationScale, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.restore();
@@ -134,27 +144,28 @@ export function drawFaces(ctx, faces, imgW, imgH, mirrored = true) {
         : 'UNIDENTIFIED';
       drawLabelPlate(
         ctx,
-        bx, by - 26,
+        bx, by - 26 * annotationScale,
         text,
         boxColor,
         matched ? INK : PAPER_DIM,
+        annotationScale,
       );
     }
 
     // Per-face stats chip (below box) 
-    drawStatsChip(ctx, bx, by + bh + 6, face, isSpoof);
+    drawStatsChip(ctx, bx, by + bh + 6 * annotationScale, face, isSpoof, annotationScale);
 
     // Detection confidence (bottom-right of box) 
     const conf = face.face?.detection_confidence;
     if (typeof conf === 'number' && conf > 0) {
       ctx.save();
       ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-      ctx.shadowBlur = 3;
-      ctx.font = '600 10px "IBM Plex Mono", monospace';
+      ctx.shadowBlur = 3 * annotationScale;
+      ctx.font = `600 ${10 * annotationScale}px "IBM Plex Mono", monospace`;
       ctx.fillStyle = boxColor;
       const txt = `${(conf * 100).toFixed(0)}%`;
       const tw = ctx.measureText(txt).width;
-      ctx.fillText(txt, bx + bw - tw - 4, by + bh - 6);
+      ctx.fillText(txt, bx + bw - tw - 4 * annotationScale, by + bh - 6 * annotationScale);
       ctx.restore();
     }
   }
@@ -164,25 +175,24 @@ export function drawFaces(ctx, faces, imgW, imgH, mirrored = true) {
  * Draw a single-color label on a solid background plate.
  * Returns the height of the rendered plate.
  */
-function drawLabelPlate(ctx, x, y, text, bgColor, textColor) {
-  ctx.font = '500 11px "IBM Plex Mono", monospace';
-  const padX = 7;
-  const padY = 4;
-  const height = 20;
+function drawLabelPlate(ctx, x, y, text, bgColor, textColor, scale = 1) {
+  ctx.font = `500 ${11 * scale}px "IBM Plex Mono", monospace`;
+  const padX = 7 * scale;
+  const height = 20 * scale;
   const tw = ctx.measureText(text).width;
 
   // Drop shadow for the plate itself
   ctx.save();
   ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-  ctx.shadowBlur = 4;
-  ctx.shadowOffsetY = 1;
+  ctx.shadowBlur = 4 * scale;
+  ctx.shadowOffsetY = scale;
   ctx.fillStyle = bgColor;
   ctx.fillRect(x, y, tw + padX * 2, height);
   ctx.restore();
 
   ctx.fillStyle = textColor;
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, x + padX, y + height / 2 + 1);
+  ctx.fillText(text, x + padX, y + height / 2 + scale);
   ctx.textBaseline = 'alphabetic'; // restore default
   return height;
 }
@@ -192,7 +202,7 @@ function drawLabelPlate(ctx, x, y, text, bgColor, textColor) {
  * Format:  [ HAPPY · ● LIVE ]
  * The liveness pill uses green or red dot + label.
  */
-function drawStatsChip(ctx, x, y, face, isSpoof) {
+function drawStatsChip(ctx, x, y, face, isSpoof, scale = 1) {
   const emotionLabel = face.emotion?.label;
   const emotionConf  = face.emotion?.confidence;
   const liveLabel    = face.anti_spoofing?.label;
@@ -200,9 +210,9 @@ function drawStatsChip(ctx, x, y, face, isSpoof) {
 
   if (!emotionLabel && !liveLabel) return;
 
-  ctx.font = '500 10px "IBM Plex Mono", monospace';
-  const padX = 8;
-  const height = 20;
+  ctx.font = `500 ${10 * scale}px "IBM Plex Mono", monospace`;
+  const padX = 8 * scale;
+  const height = 20 * scale;
 
   // Build the parts we'll render with their colors
   const parts = [];
@@ -231,7 +241,7 @@ function drawStatsChip(ctx, x, y, face, isSpoof) {
   // Measure total width
   const sep = '  ·  ';
   const sepW = ctx.measureText(sep).width;
-  const dotW = 12; // 6px dot + 6px gap
+  const dotW = 12 * scale; // 6px dot + 6px gap
   let totalW = 0;
   for (let i = 0; i < parts.length; i++) {
     if (i > 0) totalW += sepW;
@@ -242,8 +252,8 @@ function drawStatsChip(ctx, x, y, face, isSpoof) {
   // Plate background
   ctx.save();
   ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-  ctx.shadowBlur = 5;
-  ctx.shadowOffsetY = 1;
+  ctx.shadowBlur = 5 * scale;
+  ctx.shadowOffsetY = scale;
   ctx.fillStyle = BG_PLATE;
   ctx.fillRect(x, y, totalW + padX * 2, height);
   ctx.restore();
@@ -256,18 +266,18 @@ function drawStatsChip(ctx, x, y, face, isSpoof) {
   for (let i = 0; i < parts.length; i++) {
     if (i > 0) {
       ctx.fillStyle = 'rgba(232, 223, 201, 0.35)';
-      ctx.fillText(sep, cx, cy + 1);
+      ctx.fillText(sep, cx, cy + scale);
       cx += sepW;
     }
     if (parts[i].dot) {
       ctx.beginPath();
       ctx.fillStyle = parts[i].dot;
-      ctx.arc(cx + 3, cy, 3, 0, Math.PI * 2);
+      ctx.arc(cx + 3 * scale, cy, 3 * scale, 0, Math.PI * 2);
       ctx.fill();
       cx += dotW;
     }
     ctx.fillStyle = parts[i].color;
-    ctx.fillText(parts[i].text, cx, cy + 1);
+    ctx.fillText(parts[i].text, cx, cy + scale);
     cx += ctx.measureText(parts[i].text).width;
   }
   ctx.textBaseline = 'alphabetic';

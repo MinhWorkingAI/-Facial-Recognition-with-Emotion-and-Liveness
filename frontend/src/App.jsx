@@ -7,6 +7,7 @@ import AttendanceLog from './components/AttendanceLog.jsx';
 import RegisterModal from './components/RegisterModal.jsx';
 import Toasts from './components/Toasts.jsx';
 import DiagnosticsView from './components/DiagnosticsView.jsx';
+import VideoUploadView from './components/VideoUploadView.jsx';
 import { useCamera } from './hooks/useCamera.js';
 import { useFrameAnalysis } from './hooks/useFrameAnalysis.js';
 import { useToasts } from './hooks/useToasts.js';
@@ -16,20 +17,23 @@ const DEDUP_WINDOW_MS = 10_000;
 
 export default function App() {
   // Routing 
-  const [route, setRoute] = useState(() =>
-    window.location.hash === '#diagnostics' ? 'diagnostics' : 'main'
-  );
+  const routeFromHash = useCallback(() => {
+    if (window.location.hash === '#diagnostics') return 'diagnostics';
+    if (window.location.hash === '#video') return 'video';
+    return 'main';
+  }, []);
+  const [route, setRoute] = useState(routeFromHash);
   const navigate = useCallback((r) => {
     setRoute(r);
-    window.location.hash = r === 'diagnostics' ? 'diagnostics' : '';
+    window.location.hash = r === 'main' ? '' : r;
   }, []);
   useEffect(() => {
     const onHashChange = () => {
-      setRoute(window.location.hash === '#diagnostics' ? 'diagnostics' : 'main');
+      setRoute(routeFromHash());
     };
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
-  }, []);
+  }, [routeFromHash]);
 
   // Shared camera
   const camera = useCamera();
@@ -164,6 +168,8 @@ export default function App() {
 
       {route === 'diagnostics' ? (
         <DiagnosticsView camera={camera} onRegistryChange={refreshBackendCount} />
+      ) : route === 'video' ? (
+        <VideoUploadView push={push} />
       ) : (
         <main className="app__main">
           <CameraView

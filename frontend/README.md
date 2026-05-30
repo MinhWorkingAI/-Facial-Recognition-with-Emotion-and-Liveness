@@ -2,12 +2,13 @@
 
 React + Vite frontend for the COS30082 facial recognition attendance system.
 
-## Two pages
+## Three pages
 
 The top bar lets you switch between:
 
 1. **§ 01 — Main Page** — main attendance UI (camera + live detection + registry + log).
-2. **§ 02 — Dev Page** — per-endpoint test page (run each API individually, see response, latency, status).
+2. **§ 02 — Upload Video** — process a local video in real time and download the annotated result.
+3. **§ 03 — Dev Page** — per-endpoint test page (run each API individually, see response, latency, status).
 
 The dev page is what you use right now while detection isn't finished — it draws a hardcoded crop box on the camera, takes the crop, and sends it to each endpoint with a "Run test" button.
 
@@ -50,6 +51,7 @@ VITE_ENDPOINT_VERIFY=/api/verification/verify
 VITE_ENDPOINT_REGISTER=/api/verification/register
 
 VITE_FRAME_INTERVAL_MS=2000
+VITE_VIDEO_FRAME_INTERVAL_MS=1000
 ```
 
 The Vite dev server proxies all `/api/*` requests to `VITE_BACKEND_URL`, so the backend URL never appears in client code.
@@ -88,6 +90,7 @@ frontend/
     │   ├── RegisterModal.jsx
     │   ├── Toasts.jsx
     │   ├── Icons.jsx
+    │   ├── VideoUploadView.jsx    ← local video analysis + annotated download
     │   ├── DiagnosticsView.jsx     ← test page
     │   └── EndpointCard.jsx        ← test card
     ├── hooks/
@@ -103,4 +106,3 @@ frontend/
         ├── tokens.css
         └── global.css
 ```
-

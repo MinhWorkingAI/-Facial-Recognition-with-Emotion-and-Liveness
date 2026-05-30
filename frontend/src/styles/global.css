@@ -222,6 +222,134 @@ ul, ol { list-style: none; }
 .camera__counter { font-family: var(--font-mono); font-size: var(--t-tiny); text-transform: uppercase; letter-spacing: 0.12em; color: var(--paper-3); }
 .camera__counter strong { color: var(--accent); font-weight: 600; margin-right: 6px; }
 
+.video-upload {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 24px;
+  padding: 16px 28px 28px;
+  overflow: hidden;
+  height: 100%;
+}
+.video-upload__stage-col {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+  min-height: 0;
+}
+.video-upload__viewport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.video-upload__viewport--empty {
+  border-style: dashed;
+}
+.video-upload__media {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: var(--frame-bg);
+}
+.video-upload__media[hidden] { display: none; }
+.video-upload__drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  color: var(--paper-3);
+  transition: color var(--d-fast), background var(--d-fast);
+}
+.video-upload__drop:hover {
+  color: var(--accent);
+  background: var(--accent-tint);
+}
+.video-upload__drop-icon {
+  width: 44px;
+  height: 44px;
+  margin-bottom: 6px;
+}
+.video-upload__drop-title {
+  font-family: var(--font-display);
+  font-size: var(--t-h3);
+  font-style: italic;
+  color: var(--paper-2);
+}
+.video-upload__drop-sub {
+  font-family: var(--font-mono);
+  font-size: var(--t-tiny);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.video-upload__controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--edge-soft);
+}
+.video-upload__status {
+  font-family: var(--font-mono);
+  font-size: var(--t-tiny);
+  letter-spacing: 0.12em;
+  text-align: right;
+  text-transform: uppercase;
+  color: var(--paper-3);
+}
+.video-upload__status.stop { color: var(--signal-stop); }
+.video-upload__progress {
+  height: 3px;
+  margin-top: 14px;
+  overflow: hidden;
+  background: var(--edge-soft);
+}
+.video-upload__progress-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 200ms linear;
+}
+.video-upload__error {
+  padding-top: 10px;
+  font-family: var(--font-mono);
+  font-size: var(--t-tiny);
+  letter-spacing: 0.04em;
+  color: var(--signal-stop);
+}
+.video-upload__input { display: none; }
+.video-upload__details {
+  display: flex;
+  flex-direction: column;
+}
+.video-upload__detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--edge-soft);
+  font-family: var(--font-mono);
+  font-size: var(--t-tiny);
+}
+.video-upload__detail dt {
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--paper-3);
+}
+.video-upload__detail dd {
+  max-width: 210px;
+  overflow: hidden;
+  color: var(--paper-2);
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.video-upload__detail dd.go { color: var(--signal-go); }
+.video-upload__detail dd.stop { color: var(--signal-stop); }
+
 .btn {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 10px 18px;
@@ -255,6 +383,8 @@ ul, ol { list-style: none; }
 
 .btn--danger-ghost { background: transparent; color: var(--signal-stop); border-color: var(--signal-stop); }
 .btn--danger-ghost:hover:not(:disabled) { background: var(--signal-stop-tint); }
+
+a.btn { text-decoration: none; }
 
 .column {
   display: flex; flex-direction: column; gap: 18px;
@@ -728,5 +858,12 @@ ul, ol { list-style: none; }
   .topbar { grid-template-columns: 1fr auto; padding: 16px 20px 0; }
   .topbar__nav { display: none; }
   .topbar__meta { font-size: 10px; gap: 14px; }
-  .app__main, .diag { padding: 12px 20px; }
+  .app__main, .diag, .video-upload { padding: 12px 20px; }
+  .video-upload { grid-template-columns: 1fr; overflow-y: auto; }
+  .video-upload__stage-col { min-height: 560px; }
+}
+
+@media (max-width: 720px) {
+  .video-upload__controls { align-items: flex-start; flex-direction: column; }
+  .video-upload__status { text-align: left; }
 }
