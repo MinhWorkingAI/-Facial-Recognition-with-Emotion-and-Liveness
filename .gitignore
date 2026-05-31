@@ -234,6 +234,7 @@ LCC_FASD_evaluation/
 
 /training_module/face_recognition_module/dataset
 /training_module/face_recognition_module/checkpoints_resnet18
+/training_module/face_recognition_module/checkpoints_resnet18_triplet/
 /training_module/face_recognition_module/weights
 /backend/weights/arcface.onnx
 /backend/captures/screenshots/

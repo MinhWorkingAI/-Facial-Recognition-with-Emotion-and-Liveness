@@ -76,6 +76,7 @@ class TrainConfig:
     save_every: int = 1
     resume: str = ""
     resume_training_state: bool = False
+    test_only: bool = False
     pretrained_backbone: str = "/home/minhcao/Swinburne/COS30082/CustomProject/-Facial-Recognition-with-Emotion-and-Liveness/training_module/face_recognition_module/weights/resnet18_110.pth"
     no_cuda: bool = False
 
@@ -797,6 +798,10 @@ class Trainer:
         )
 
         try:
+            if self.config.test_only:
+                self.evaluate_test()
+                return
+
             epochs_without_improvement = 0
             for epoch in range(self.start_epoch, self.config.epochs + 1):
                 train_metrics = self.train_one_epoch(epoch)
@@ -838,22 +843,27 @@ class Trainer:
                         )
                         break
 
-            if "test" in self.loaders:
-                test_metrics = self.evaluate("test", build_confusion=True)
-                confusion = test_metrics.pop("confusion_matrix")
-                test_metrics.update(self.evaluate_verification("test"))
-                self.save_confusion_matrix(confusion)
-                self.logger.log_test(test_metrics, confusion, self.config.confusion_image_max_classes)
-                test_auc_text = ""
-                if "verification_auc" in test_metrics:
-                    test_auc_text = f" auc {float(test_metrics['verification_auc']):.4f}"
-                print(
-                    f"test loss {test_metrics['loss']:.4f} acc {test_metrics['accuracy']:.4f} "
-                    f"precision {test_metrics['precision']:.4f} recall {test_metrics['recall']:.4f} "
-                    f"f1 {test_metrics['f1']:.4f}{test_auc_text}"
-                )
+            self.evaluate_test()
         finally:
             self.logger.close()
+
+    def evaluate_test(self) -> None:
+        if "test" not in self.loaders:
+            raise ValueError("test_data split is required for test-only evaluation")
+
+        test_metrics = self.evaluate("test", build_confusion=True)
+        confusion = test_metrics.pop("confusion_matrix")
+        test_metrics.update(self.evaluate_verification("test"))
+        self.save_confusion_matrix(confusion)
+        self.logger.log_test(test_metrics, confusion, self.config.confusion_image_max_classes)
+        test_auc_text = ""
+        if "verification_auc" in test_metrics:
+            test_auc_text = f" auc {float(test_metrics['verification_auc']):.4f}"
+        print(
+            f"test loss {test_metrics['loss']:.4f} acc {test_metrics['accuracy']:.4f} "
+            f"precision {test_metrics['precision']:.4f} recall {test_metrics['recall']:.4f} "
+            f"f1 {test_metrics['f1']:.4f}{test_auc_text}"
+        )
 
     def checkpoint_payload(self, epoch: int) -> Dict[str, object]:
         return {
@@ -1013,6 +1023,7 @@ def parse_args() -> TrainConfig:
         action="store_true",
         help="Restore optimizer, scheduler, and epoch from checkpoint. Use only for exact same training setup.",
     )
+    parser.add_argument("--test-only", action="store_true", help="Skip training and evaluate the test split only.")
     parser.add_argument("--pretrained-backbone", default=TrainConfig.pretrained_backbone)
     parser.add_argument("--no-cuda", action="store_true")
     parser.set_defaults(progress=TrainConfig.progress)
